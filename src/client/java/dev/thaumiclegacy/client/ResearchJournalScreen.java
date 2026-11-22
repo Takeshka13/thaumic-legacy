@@ -1,7 +1,13 @@
 package dev.thaumiclegacy.client;
 
+import dev.thaumiclegacy.research.JournalSnapshotPayload;
+import dev.thaumiclegacy.research.JournalSnapshotPayload.AspectView;
+import dev.thaumiclegacy.research.JournalSnapshotPayload.SpecimenView;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractScrollWidget;
@@ -9,9 +15,12 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.Item;
 
 final class ResearchJournalScreen extends Screen {
 	private static final int COVER = 0xFF462E28;
@@ -19,19 +28,18 @@ final class ResearchJournalScreen extends Screen {
 	private static final int PAPER = 0xFFF2E0B8;
 	private static final int INK = 0xFF37271D;
 	private static final int ACCENT = 0xFF744039;
+	private static final int MUTED_INK = 0xFF624E48;
 	private static final String KEY = "screen.thaumiclegacy.journal.";
 
-	private final List<ResourceLocation> observations;
-	private final boolean unlocked;
+	private final JournalSnapshotPayload journal;
 	private int left;
 	private int top;
 	private int panelWidth;
 	private int panelHeight;
 
-	ResearchJournalScreen(List<ResourceLocation> observations, boolean unlocked) {
+	ResearchJournalScreen(JournalSnapshotPayload journal) {
 		super(Component.translatable("item.thaumiclegacy.research_journal"));
-		this.observations = List.copyOf(observations);
-		this.unlocked = unlocked;
+		this.journal = journal;
 	}
 
 	@Override
@@ -63,26 +71,88 @@ final class ResearchJournalScreen extends Screen {
 	private List<Paragraph> paragraphs() {
 		List<Paragraph> paragraphs = new ArrayList<>();
 		paragraphs.add(new Paragraph(getTitle(), ACCENT, 8));
-		paragraphs.add(new Paragraph(Component.translatable(KEY + "specimens", observations.size()), INK, 4));
-		if (observations.isEmpty()) {
+		Set<ResourceLocation> detailedBlocks = new HashSet<>();
+		for (SpecimenView specimen : journal.specimens()) {
+			if (specimen.kind().equalsIgnoreCase("block")) {
+				detailedBlocks.add(specimen.id());
+			}
+		}
+		List<ResourceLocation> legacy = journal.observations().stream()
+			.filter(observation -> !detailedBlocks.contains(observation))
+			.toList();
+		int specimenCount = journal.specimens().size() + legacy.size();
+		paragraphs.add(new Paragraph(Component.translatable(KEY + "specimens", specimenCount), INK, 4));
+		if (specimenCount == 0) {
 			paragraphs.add(new Paragraph(Component.translatable(KEY + "empty"), INK, 6));
 		}
-		for (ResourceLocation observation : observations) {
-			Component name = Component.translatable(observation.toLanguageKey("block"));
-			Component note = Component.translatable(observation.toLanguageKey("observation"));
-			paragraphs.add(new Paragraph(name, ACCENT, 1));
-			paragraphs.add(new Paragraph(note, INK, 5));
+		for (SpecimenView specimen : journal.specimens()) {
+			addSpecimen(paragraphs, specimen.id(), specimen.kind(), specimen.aspects());
 		}
-		String state = unlocked ? "unlocked" : "locked";
+		for (ResourceLocation observation : legacy) {
+			addSpecimen(paragraphs, observation, "block", List.of());
+		}
+
+		String state = journal.unlocked() ? "unlocked" : "locked";
 		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".title"), ACCENT, 3));
-		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".body"), INK, 0));
+		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".body"), INK, 8));
+
+		paragraphs.add(new Paragraph(Component.translatable(KEY + "discovered", journal.discovered().size()), ACCENT, 4));
+		if (journal.discovered().isEmpty()) {
+			paragraphs.add(new Paragraph(Component.translatable(KEY + "discovered.empty"), INK, 0));
+		}
+		for (AspectView aspect : journal.discovered()) {
+			paragraphs.add(aspectParagraph(aspect, false));
+		}
 		return paragraphs;
 	}
 
-	private record Paragraph(Component text, int color, int spacing) {}
+	private static void addSpecimen(List<Paragraph> paragraphs, ResourceLocation id, String kind, List<AspectView> aspects) {
+		String prefix = kind.toLowerCase(Locale.ROOT);
+		String nameKey = id.toLanguageKey(prefix);
+		if (prefix.equals("item")) {
+			nameKey = BuiltInRegistries.ITEM.getOptional(id).map(Item::getDescriptionId).orElse(nameKey);
+		}
+		Component name = Component.translatableWithFallback(nameKey, id.toString());
+		if (I18n.exists(KEY + "kind." + prefix)) {
+			name = Component.translatable(KEY + "specimen", name, Component.translatable(KEY + "kind." + prefix));
+		}
+		paragraphs.add(new Paragraph(name, ACCENT, 3));
+		String noteKey = id.toLanguageKey("observation");
+		if (prefix.equals("block") && I18n.exists(noteKey)) {
+			paragraphs.add(new Paragraph(Component.translatable(noteKey), INK, 4));
+		}
+		for (AspectView aspect : aspects) {
+			paragraphs.add(aspectParagraph(aspect, true));
+		}
+		paragraphs.add(new Paragraph(Component.empty(), INK, 3));
+	}
+
+	private static Paragraph aspectParagraph(AspectView aspect, boolean showAmount) {
+		boolean known = !aspect.id().isEmpty();
+		Component name = known ? aspectName(aspect.id()) : Component.translatable(KEY + "aspect.unknown");
+		if (showAmount && aspect.amount() > 0) {
+			name = Component.translatable(KEY + "aspect.amount", name, aspect.amount());
+		}
+		if (known && aspect.parents().size() == 2) {
+			name = Component.translatable(KEY + "aspect.formula", name,
+				aspectName(aspect.parents().getFirst()), aspectName(aspect.parents().getLast()));
+		}
+		return new Paragraph(name, known ? INK : MUTED_INK, 3, aspect);
+	}
+
+	private static Component aspectName(String id) {
+		return Component.translatableWithFallback("aspect.thaumiclegacy." + id, id);
+	}
+
+	private record Paragraph(Component text, int color, int spacing, AspectView aspect) {
+		Paragraph(Component text, int color, int spacing) {
+			this(text, color, spacing, null);
+		}
+	}
 
 	private static final class JournalPage extends AbstractScrollWidget {
 		private static final int LINE_HEIGHT = 12;
+		private static final int GLYPH_INDENT = 17;
 
 		private final Font font;
 		private final List<Line> lines = new ArrayList<>();
@@ -94,14 +164,19 @@ final class ResearchJournalScreen extends Screen {
 			this.font = font;
 			int offset = 0;
 			for (Paragraph paragraph : paragraphs) {
-				for (FormattedCharSequence line : font.split(paragraph.text(), width - totalInnerPadding())) {
-					lines.add(new Line(line, paragraph.color(), offset));
+				int indent = paragraph.aspect() == null ? 0 : GLYPH_INDENT;
+				int textWidth = Math.max(1, width - totalInnerPadding() - indent);
+				AspectView aspect = paragraph.aspect();
+				for (FormattedCharSequence line : font.split(paragraph.text(), textWidth)) {
+					lines.add(new Line(line, paragraph.color(), offset, indent, aspect));
+					aspect = null;
 					offset += LINE_HEIGHT;
 				}
 				offset += paragraph.spacing();
 			}
 			innerHeight = offset;
-			narration = paragraphs.stream().map(Paragraph::text).toArray(Component[]::new);
+			narration = paragraphs.stream().map(Paragraph::text)
+				.filter(text -> !text.equals(Component.empty())).toArray(Component[]::new);
 		}
 
 		@Override
@@ -127,7 +202,14 @@ final class ResearchJournalScreen extends Screen {
 			int x = getX() + innerPadding();
 			int top = getY() + innerPadding();
 			for (Line line : lines) {
-				graphics.drawString(font, line.text(), x, top + line.offset(), line.color(), false);
+				int y = top + line.offset();
+				if (!withinContentAreaTopBottom(y - 1, y + LINE_HEIGHT)) {
+					continue;
+				}
+				if (line.aspect() != null) {
+					AspectGlyphs.draw(graphics, line.aspect(), x, y - 1);
+				}
+				graphics.drawString(font, line.text(), x + line.indent(), y, line.color(), false);
 			}
 		}
 
@@ -137,6 +219,6 @@ final class ResearchJournalScreen extends Screen {
 			output.add(NarratedElementType.USAGE, narration);
 		}
 
-		private record Line(FormattedCharSequence text, int color, int offset) {}
+		private record Line(FormattedCharSequence text, int color, int offset, int indent, AspectView aspect) {}
 	}
 }

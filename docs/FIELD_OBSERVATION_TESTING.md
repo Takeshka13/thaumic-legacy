@@ -22,7 +22,7 @@ Use the actual artifact path if the configured version differs. The script exits
 Run Fabric GameTest with a separate test configuration.
 
 ```powershell
-.\gradlew.bat runServer --no-configuration-cache -I .\scripts\field-observation-gametest.gradle
+.\gradlew.bat runFieldObservationTests
 ```
 
 The runner uses a test world under `build/field-observation-tests/server` and writes `build/field-observation-tests/report.xml`. It tests both recipes with Minecraft's recipe manager, all three observations, duplicate and invalid attempts, the unlock threshold, two mock player UUIDs, and reloading their records from disk.

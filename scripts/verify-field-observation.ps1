@@ -43,7 +43,20 @@ try {
             $null = Get-RequiredEntry $archive (($className -replace '\.', '/') + '.class')
         }
     }
-    $null = Get-RequiredEntry $archive 'dev/thaumiclegacy/research/JournalSnapshotPayload.class'
+    foreach ($classPath in @(
+        'aspect/AspectCatalog',
+        'research/AspectDiscoveryData',
+        'research/JournalSnapshotPayload',
+        'research/ScanFeedbackPayload'
+    )) {
+        $null = Get-RequiredEntry $archive "dev/thaumiclegacy/$classPath.class"
+    }
+
+    $catalog = Read-JsonEntry $archive 'data/thaumiclegacy/thaumiclegacy/aspects/base.json'
+    $assignments = Read-JsonEntry $archive 'data/thaumiclegacy/thaumiclegacy/assignments/base.json'
+    if ($catalog.aspects.Count -ne 48 -or $assignments.assignments.Count -ne 98) {
+        throw 'Expected 48 aspects and 98 bundled specimen profiles.'
+    }
 
     foreach ($item in @('field_lens', 'research_journal')) {
         $model = Read-JsonEntry $archive "assets/thaumiclegacy/models/item/$item.json"
@@ -91,11 +104,20 @@ try {
         'item.thaumiclegacy.research_journal',
         'message.thaumiclegacy.observed',
         'message.thaumiclegacy.already_observed',
-        'message.thaumiclegacy.no_target',
+        'message.thaumiclegacy.aspect_scan_hint',
         'message.thaumiclegacy.research_unlocked',
+        'hud.thaumiclegacy.aspect_discovered',
         'screen.thaumiclegacy.journal.page',
         'screen.thaumiclegacy.journal.specimens',
         'screen.thaumiclegacy.journal.empty',
+        'screen.thaumiclegacy.journal.specimen',
+        'screen.thaumiclegacy.journal.kind.block',
+        'screen.thaumiclegacy.journal.kind.item',
+        'screen.thaumiclegacy.journal.kind.entity',
+        'screen.thaumiclegacy.journal.discovered',
+        'screen.thaumiclegacy.journal.discovered.empty',
+        'screen.thaumiclegacy.journal.aspect.unknown',
+        'screen.thaumiclegacy.journal.aspect.amount',
         'screen.thaumiclegacy.journal.locked.title',
         'screen.thaumiclegacy.journal.locked.body',
         'screen.thaumiclegacy.journal.unlocked.title',
@@ -104,6 +126,7 @@ try {
         'observation.minecraft.torch',
         'observation.minecraft.oak_log'
     )
+    $requiredKeys += @($catalog.aspects | ForEach-Object { "aspect.thaumiclegacy.$($_.id)" })
     $referenceKeys = $null
     foreach ($locale in @('en_us', 'ru_ru')) {
         $translations = Read-JsonEntry $archive "assets/thaumiclegacy/lang/$locale.json"
@@ -119,14 +142,14 @@ try {
                 throw "Expected a nonempty '$key' translation in $locale."
             }
         }
-        foreach ($key in @('message.thaumiclegacy.observed', 'screen.thaumiclegacy.journal.specimens')) {
+        foreach ($key in @('message.thaumiclegacy.observed', 'screen.thaumiclegacy.journal.specimens', 'screen.thaumiclegacy.journal.discovered')) {
             if ($translations.$key -cnotmatch '%(?:1\$)?s') {
                 throw "Expected the argument placeholder for '$key' in '$locale'."
             }
         }
     }
 
-    Write-Output 'Field Lens and Research Journal packaging checks passed.'
+    Write-Output 'Field Lens, Research Journal, and aspect catalog packaging checks passed.'
 } finally {
     $archive.Dispose()
 }

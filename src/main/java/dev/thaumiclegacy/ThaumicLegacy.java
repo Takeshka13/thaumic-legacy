@@ -1,8 +1,10 @@
 package dev.thaumiclegacy;
 
+import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ResearchJournalItem;
+import dev.thaumiclegacy.research.ScanFeedbackPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -34,6 +36,9 @@ public class ThaumicLegacy implements ModInitializer {
 			entries.accept(researchJournal);
 		});
 		PayloadTypeRegistry.playS2C().register(JournalSnapshotPayload.TYPE, JournalSnapshotPayload.STREAM_CODEC);
+		PayloadTypeRegistry.playS2C().register(ScanFeedbackPayload.TYPE, ScanFeedbackPayload.STREAM_CODEC);
+		FieldLensItem.registerEntityInteraction();
+		AspectCatalog.register();
 	}
 
 	public static ResourceLocation id(String path) {

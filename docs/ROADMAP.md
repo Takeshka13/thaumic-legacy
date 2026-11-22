@@ -35,3 +35,7 @@ The GitHub Actions workflow selects JDK 21. Verification on a hosted GitHub runn
 - The user confirmed that all nine manual gameplay checks passed.
 - Local build, client restart, dedicated-server startup and shutdown, and server GameTests passed. The GameTests verify separate progress for two simulated players.
 - The two-real-client dedicated-server scenario remains open, including reconnect and checking each player's journal after a server restart. [QA procedure](FIELD_OBSERVATION_TESTING.md#dedicated-server-with-two-players)
+
+### Aspect Discovery extension
+
+The Field Lens and Research Journal now use 48 original aspects across 98 bundled specimen profiles. Discovery uses evidence and compound prerequisites, with separate per-player storage for the aspect layer and a compatible import of legacy observations. See [Aspect Discovery](ASPECTS.md) for controls, data conventions, and multiplayer checks.

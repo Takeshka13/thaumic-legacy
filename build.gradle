@@ -29,6 +29,32 @@ fabricApi {
 	}
 }
 
+sourceSets {
+	gametest {
+		compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+	}
+}
+
+def fieldObservationOutput = layout.buildDirectory.dir('field-observation-tests')
+def fieldObservationTestMod = tasks.register('fieldObservationTestMod', Jar) {
+	destinationDirectory = fieldObservationOutput
+	archiveFileName = 'field-observation-tests.jar'
+	from(sourceSets.gametest.output)
+}
+
+loom.runs.create('fieldObservationTests') {
+	server()
+	def output = fieldObservationOutput.get()
+	runDir(project.relativePath(output.dir('server').asFile))
+	vmArg('-Dfabric-api.gametest')
+	vmArg("-Dfabric-api.gametest.report-file=${output.file('report.xml').asFile.absolutePath}")
+	vmArg("-Dfabric.addMods=${output.file('field-observation-tests.jar').asFile.absolutePath}")
+}
+
+tasks.named('runFieldObservationTests') {
+	dependsOn(fieldObservationTestMod)
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
