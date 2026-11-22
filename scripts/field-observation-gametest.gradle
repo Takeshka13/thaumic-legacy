@@ -1,0 +1,29 @@
+gradle.beforeProject { project ->
+    project.plugins.withId('fabric-loom') {
+        def testOutput = project.layout.buildDirectory.dir('field-observation-tests').get()
+        def main = project.sourceSets.main
+
+        def compileChecks = project.tasks.register('compileFieldObservationChecks', JavaCompile) {
+            source = project.fileTree('src/gametest/java') { include '**/*.java' }
+            classpath = main.compileClasspath + main.output
+            destinationDirectory = testOutput.dir('classes')
+            options.release = 21
+            dependsOn(project.tasks.named('classes'))
+        }
+        def testMod = project.tasks.register('fieldObservationTestMod', Jar) {
+            destinationDirectory = testOutput
+            archiveFileName = 'field-observation-tests.jar'
+            from(compileChecks.flatMap { it.destinationDirectory })
+            from('src/gametest/resources')
+        }
+        project.loom.runs.configureEach { run ->
+            if (run.name == 'server') {
+                run.runDir(project.relativePath(testOutput.dir('server').asFile))
+                run.vmArg('-Dfabric-api.gametest')
+                run.vmArg("-Dfabric-api.gametest.report-file=${testOutput.file('report.xml').asFile.absolutePath}")
+                run.vmArg("-Dfabric.addMods=${testOutput.file('field-observation-tests.jar').asFile.absolutePath}")
+            }
+        }
+        project.tasks.matching { it.name == 'runServer' }.configureEach { dependsOn(testMod) }
+    }
+}

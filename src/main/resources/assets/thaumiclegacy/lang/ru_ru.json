@@ -3,5 +3,21 @@
   "thaumiclegacy.magical_energy": "Магическая энергия",
   "thaumiclegacy.research": "Исследования",
   "thaumiclegacy.alchemy": "Алхимия",
-  "thaumiclegacy.rituals": "Ритуалы"
+  "thaumiclegacy.rituals": "Ритуалы",
+  "item.thaumiclegacy.field_lens": "Линза наблюдателя",
+  "item.thaumiclegacy.research_journal": "Полевой журнал",
+  "message.thaumiclegacy.observed": "Записано наблюдение: %s.",
+  "message.thaumiclegacy.already_observed": "Этот образец уже записан в полевом журнале.",
+  "message.thaumiclegacy.no_target": "Наведите линзу на ближайший камень, факел или дубовое бревно, чтобы записать наблюдение.",
+  "message.thaumiclegacy.research_unlocked": "Новая запись в полевом журнале: «Сравнение образцов».",
+  "screen.thaumiclegacy.journal.page": "Страница журнала",
+  "screen.thaumiclegacy.journal.specimens": "Наблюдения (%s)",
+  "screen.thaumiclegacy.journal.empty": "Используйте линзу наблюдателя на камне, факеле или дубовом бревне. Новые наблюдения появятся здесь.",
+  "screen.thaumiclegacy.journal.locked.title": "Сравнение образцов (закрыто)",
+  "screen.thaumiclegacy.journal.locked.body": "Изучите два разных образца, чтобы открыть эту запись.",
+  "screen.thaumiclegacy.journal.unlocked.title": "Сравнение образцов",
+  "screen.thaumiclegacy.journal.unlocked.body": "Камень держит форму, пламя отдаёт тепло, а древесина хранит следы роста. Сравните первые два образца с третьим, чтобы увидеть ещё одно свойство материала.",
+  "observation.minecraft.stone": "Жёсткость. Излом пересекает зёрна породы. Камень одинаково сопротивлялся нажиму с любой стороны.",
+  "observation.minecraft.torch": "Тепло. Тепло поднимается над фитилём, а свет расходится в стороны.",
+  "observation.minecraft.oak_log": "Рост. Волокна тянутся вдоль ствола. Кольца на срезе отмечают каждый сезон роста."
 }

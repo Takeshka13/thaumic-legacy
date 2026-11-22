@@ -3,5 +3,21 @@
   "thaumiclegacy.magical_energy": "Magical Energy",
   "thaumiclegacy.research": "Research",
   "thaumiclegacy.alchemy": "Alchemy",
-  "thaumiclegacy.rituals": "Rituals"
+  "thaumiclegacy.rituals": "Rituals",
+  "item.thaumiclegacy.field_lens": "Field Lens",
+  "item.thaumiclegacy.research_journal": "Research Journal",
+  "message.thaumiclegacy.observed": "Recorded a new specimen: %s.",
+  "message.thaumiclegacy.already_observed": "This specimen is already recorded in your research journal.",
+  "message.thaumiclegacy.no_target": "Aim at nearby stone, a torch, or an oak log to record a specimen.",
+  "message.thaumiclegacy.research_unlocked": "New entry in your research journal: Comparing Specimens.",
+  "screen.thaumiclegacy.journal.page": "Journal page",
+  "screen.thaumiclegacy.journal.specimens": "Recorded specimens (%s)",
+  "screen.thaumiclegacy.journal.empty": "Use the field lens on stone, a torch, or an oak log. New observations will appear here.",
+  "screen.thaumiclegacy.journal.locked.title": "Comparing Specimens (locked)",
+  "screen.thaumiclegacy.journal.locked.body": "Record any two different specimens to open this entry.",
+  "screen.thaumiclegacy.journal.unlocked.title": "Comparing Specimens",
+  "screen.thaumiclegacy.journal.unlocked.body": "Stone holds its shape, flame gives off heat, and wood preserves the shape of its growth. Compare your first two specimens with the third to see a different material trait.",
+  "observation.minecraft.stone": "Rigidity. The fracture runs across the grain. The stone resisted evenly in every direction.",
+  "observation.minecraft.torch": "Warmth. Heat rises above the wick while light spreads to either side.",
+  "observation.minecraft.oak_log": "Growth. The grain runs along the trunk. The rings on the cut face mark each season of growth."
 }

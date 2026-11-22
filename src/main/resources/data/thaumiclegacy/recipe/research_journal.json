@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    { "item": "minecraft:book" },
+    { "item": "minecraft:copper_ingot" }
+  ],
+  "result": { "id": "thaumiclegacy:research_journal", "count": 1 }
+}
