@@ -1,0 +1,33 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "thaumiclegacy:block/crucible"
+      }
+    },
+    {
+      "when": {
+        "phase": "filled"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/crucible_filled"
+      }
+    },
+    {
+      "when": {
+        "phase": "heating"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/crucible_heating"
+      }
+    },
+    {
+      "when": {
+        "phase": "ready"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/crucible_ready"
+      }
+    }
+  ]
+}

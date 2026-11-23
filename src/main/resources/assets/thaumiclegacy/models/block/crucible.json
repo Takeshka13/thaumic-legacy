@@ -1,0 +1,23 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "thaumiclegacy:block/crucible_metal",
+    "metal": "thaumiclegacy:block/crucible_metal",
+    "rim": "thaumiclegacy:block/crucible_rim"
+  },
+  "elements": [
+    {"from":[2,0,2],"to":[5,2,5],"faces":{"down":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[2,0,11],"to":[5,2,14],"faces":{"down":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[11,0,2],"to":[14,2,5],"faces":{"down":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[11,0,11],"to":[14,2,14],"faces":{"down":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[2,2,2],"to":[14,5,14],"faces":{"down":{"texture":"#metal"},"up":{"texture":"#metal"},"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[2,5,2],"to":[14,12,4],"faces":{"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[2,5,12],"to":[14,12,14],"faces":{"north":{"texture":"#metal"},"south":{"texture":"#metal"},"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[2,5,4],"to":[4,12,12],"faces":{"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[12,5,4],"to":[14,12,12],"faces":{"west":{"texture":"#metal"},"east":{"texture":"#metal"}}},
+    {"from":[1,12,1],"to":[15,14,4],"faces":{"up":{"texture":"#rim"},"down":{"texture":"#rim"},"north":{"texture":"#rim"},"south":{"texture":"#rim"},"west":{"texture":"#rim"},"east":{"texture":"#rim"}}},
+    {"from":[1,12,12],"to":[15,14,15],"faces":{"up":{"texture":"#rim"},"down":{"texture":"#rim"},"north":{"texture":"#rim"},"south":{"texture":"#rim"},"west":{"texture":"#rim"},"east":{"texture":"#rim"}}},
+    {"from":[1,12,4],"to":[4,14,12],"faces":{"up":{"texture":"#rim"},"down":{"texture":"#rim"},"west":{"texture":"#rim"},"east":{"texture":"#rim"}}},
+    {"from":[12,12,4],"to":[15,14,12],"faces":{"up":{"texture":"#rim"},"down":{"texture":"#rim"},"west":{"texture":"#rim"},"east":{"texture":"#rim"}}}
+  ]
+}

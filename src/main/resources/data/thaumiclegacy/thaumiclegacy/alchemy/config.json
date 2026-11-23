@@ -1,0 +1,13 @@
+{
+  "capacity": 64,
+  "heat_ticks": 100,
+  "flux_units_per_point": 8,
+  "heat_sources": [
+    "minecraft:fire",
+    "minecraft:soul_fire",
+    "minecraft:lava",
+    "minecraft:magma_block",
+    "minecraft:campfire",
+    "minecraft:soul_campfire"
+  ]
+}

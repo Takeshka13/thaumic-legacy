@@ -8,7 +8,8 @@
       "dev.thaumiclegacy.aspect.AspectCatalogGameTest",
       "dev.thaumiclegacy.research.FieldObservationGameTest",
       "dev.thaumiclegacy.aura.AuraGameTest",
-      "dev.thaumiclegacy.workbench.ArcaneWorkbenchGameTest"
+      "dev.thaumiclegacy.workbench.ArcaneWorkbenchGameTest",
+      "dev.thaumiclegacy.alchemy.CrucibleGameTest"
     ]
   },
   "depends": {

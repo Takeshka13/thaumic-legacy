@@ -1,0 +1,7 @@
+{
+  "type": "thaumiclegacy:alchemy",
+  "catalyst": {"item": "minecraft:glass"},
+  "aspects": {"thaumiclegacy:lux": 2, "thaumiclegacy:vitreus": 2},
+  "result": {"id": "thaumiclegacy:lumen_glass", "count": 2},
+  "research": "thaumiclegacy:alchemy_foundations"
+}

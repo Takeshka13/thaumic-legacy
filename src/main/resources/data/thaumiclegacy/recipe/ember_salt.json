@@ -1,0 +1,7 @@
+{
+  "type": "thaumiclegacy:alchemy",
+  "catalyst": {"item": "minecraft:redstone"},
+  "aspects": {"thaumiclegacy:ignis": 4, "thaumiclegacy:perditio": 2},
+  "result": {"id": "thaumiclegacy:ember_salt", "count": 1},
+  "research": "thaumiclegacy:alchemy_foundations"
+}

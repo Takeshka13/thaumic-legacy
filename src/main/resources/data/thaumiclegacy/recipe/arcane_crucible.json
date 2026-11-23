@@ -1,0 +1,11 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": ["R", "C"],
+  "key": {
+    "R": {"item": "thaumiclegacy:resonant_copper"},
+    "C": {"item": "minecraft:cauldron"}
+  },
+  "result": {"id": "thaumiclegacy:crucible", "count": 1},
+  "vis_cost": 12,
+  "research": "thaumiclegacy:alchemy_foundations"
+}

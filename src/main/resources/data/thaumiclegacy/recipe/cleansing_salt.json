@@ -1,0 +1,7 @@
+{
+  "type": "thaumiclegacy:alchemy",
+  "catalyst": {"item": "minecraft:sugar"},
+  "aspects": {"thaumiclegacy:aqua": 2, "thaumiclegacy:ordo": 1},
+  "result": {"id": "thaumiclegacy:cleansing_salt", "count": 1},
+  "research": "thaumiclegacy:alchemy_foundations"
+}

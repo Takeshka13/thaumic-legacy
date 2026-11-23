@@ -52,13 +52,13 @@ Use built-in recipe and advancement facilities when they fit. Keep milestones in
 
 ### F03 Flux and remediation
 
-**Flux** is a separate, bounded pollution balance. It decays slowly and reduces or temporarily stops Vis recovery. The Thaumometer displays the balance and recovery state. Operator commands exercise pollution and cleanup through internal operations. Alchemical sources, treatment devices, neighbor transfer, and anomalies can build on those operations in later stages. The [aura design](AURA_SYSTEM.md) records the rules and historical comparisons.
+**Flux** is a separate, bounded pollution balance. It decays slowly and reduces or temporarily stops Vis recovery. The Thaumometer displays the balance and recovery state. The Crucible adds Flux when residue is discarded, and Cleansing Salt removes up to eight Flux. Operator commands exercise the same ledger. Treatment devices, neighbor transfer, and anomalies are later systems. See [aura design](AURA_SYSTEM.md) and [alchemy](ALCHEMY.md).
 
 ### F07 Alchemy and distillation
 
-Design a batch station that accepts a set of tagged inputs, a reusable or consumed catalyst as declared by the recipe, and a selected heat mode. An initial recipe converts common inputs into one useful workshop material. Distillation can separate a known specimen into one refined essence, with bounded yield and optional residue. Later combinations trade speed against waste and purity.
+The Crucible stores water, heat progress, and a bounded mixture. Ordinary item use extracts the listed aspects into the mixture. Sneaking with a catalyst selects a recipe. The server checks the player's research, required Essentia, and output capacity before committing one operation. Leftover Essentia can feed later recipes. Discarding it emits local Flux.
 
-Use 1.21.1 recipe or reload facilities after choosing the schema. Match a deterministic recipe, verify the output and waste sinks, and commit costs once. Persist the station's batch phase and input reservation for multi-tick work. Treat full outputs as backpressure and make the player-visible state reason explicit.
+Separate distillation, output vessels, and transfer networks remain later systems. They can reuse the aspect and capacity rules while defining their own storage, ownership, and input retirement behavior. See [Alchemy](ALCHEMY.md) for recipes, controls, heat rules and configurable residue conversion.
 
 ### F08 Magical crafting
 
