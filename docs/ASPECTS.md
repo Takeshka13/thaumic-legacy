@@ -12,7 +12,7 @@ The bundled data describes 44 blocks, 33 items, and 21 entity types. The [assign
 
 Observation evidence is available in the bundled profiles for all 52 aspects. Common materials cover the primal foundation before rarer specimens contribute compounds. Stone, torch, feather, charcoal, and a water bucket provide a short route to all six primals, and the same group can reveal Lux.
 
-## Field Lens
+## Thaumometer
 
 - Observe an assigned block or creature by aiming at it and using the lens. A dropped item uses the same profile as its held item. To examine a held specimen, place the lens in the main hand and the specimen in the offhand, then crouch and use the lens.
 - The server identifies the target and verifies reach and sight. The journal records each target kind and registry ID once per player. Standing and wall torches share a block record.
@@ -31,7 +31,7 @@ Observation evidence is available in the bundled profiles for all 52 aspects. Co
 ## Checking in Minecraft
 
 1. Run `gradlew.bat runClient --args="--username AspectTester"` and create a disposable world. Use the same username and world after restarting.
-2. With commands enabled, run `/give @s thaumiclegacy:field_lens` and `/give @s thaumiclegacy:research_journal`. Open the journal and confirm that it starts empty on a fresh player.
+2. With commands enabled, run `/give @s thaumiclegacy:thaumometer` and `/give @s thaumiclegacy:research_journal`. Open the journal and confirm that it starts empty on a fresh player.
 3. Scan stone and a torch. Check Terra and Ordo for stone, Ignis and an unknown entry for the torch, and the first research unlock. Scan the same torch again and check that the history and counts stay unchanged.
 4. Scan a dropped feather. It exposes Aer and unlocks the earlier torch's Lux evidence. Scan a feather again in the offhand while crouching. Both item actions must share one record.
 5. Observe an oak log and a sheep. Examine charcoal and a water bucket in the offhand to complete the six primals. Observe an oak sapling to supply Victus evidence. Reopen the oak-log entry to check Herba and Arbor with their quantities.

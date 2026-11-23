@@ -2,6 +2,7 @@ package dev.thaumiclegacy.research;
 
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.aspect.AspectCatalog;
+import dev.thaumiclegacy.aura.AuraService;
 import dev.thaumiclegacy.research.AspectDiscoveryData.Specimen;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
@@ -206,6 +208,80 @@ public class FieldObservationGameTest implements FabricGameTest {
         test.assertValueEqual(restored.snapshot(second.getUUID(), secondSnapshot.observations(), catalog), secondSnapshot,
             "Second player's saved journal");
         test.succeed();
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE)
+    @SuppressWarnings("removal")
+    public void thaumometerSharesResearchWithoutSpendingAura(GameTestHelper test) {
+        var level = test.getLevel();
+        var stone = test.absolutePos(new BlockPos(0, 1, 0));
+        var torch = stone.east(2);
+        level.setBlockAndUpdate(stone, Blocks.STONE.defaultBlockState());
+        level.setBlockAndUpdate(torch.below(), Blocks.STONE.defaultBlockState());
+        level.setBlockAndUpdate(torch, Blocks.TORCH.defaultBlockState());
+        var player = test.makeMockServerPlayerInLevel();
+        var scanner = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("thaumometer"));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(scanner));
+        var measuredChunk = new ChunkPos(stone);
+        var before = AuraService.read(level, measuredChunk);
+
+        observe(player, stone, 1.1);
+        test.assertValueEqual(AuraService.read(level, measuredChunk), before, "Scanning a block does not cost aura");
+        var initial = ResearchJournalItem.snapshot(player);
+        test.assertValueEqual(specimens(initial), List.of("block:stone"), "Thaumometer records a block in the existing journal");
+        observe(player, torch, 1.1);
+        test.assertValueEqual(ResearchJournalItem.snapshot(player), initial, "Thaumometer cooldown prevents a second immediate scan");
+
+        test.runAfterDelay(9, () -> {
+            elapseMockCooldown(player);
+            observe(player, torch, 1.1);
+            test.assertTrue(ResearchJournalItem.snapshot(player).unlocked(), "Scanning with the Thaumometer opens Comparing Specimens");
+        });
+        test.runAfterDelay(18, () -> {
+            elapseMockCooldown(player);
+            var feather = test.spawnItem(Items.FEATHER, new Vec3(0.5, 2, 0.5));
+            pointAt(player, feather.position(), 0.4);
+            useLensInAir(player);
+            feather.discard();
+            test.assertTrue(ResearchProgress.isUnlocked(player, ResearchProgress.ARCANE_FOUNDATIONS),
+                "Thaumometer reads dropped items and reveals Lux");
+        });
+        test.runAfterDelay(27, () -> {
+            elapseMockCooldown(player);
+            observeHeld(player, Items.WATER_BUCKET);
+            test.assertTrue(ResearchProgress.isUnlocked(player, ResearchProgress.ALCHEMY_FOUNDATIONS),
+                "Thaumometer reads a held offhand specimen while crouching");
+        });
+        test.runAfterDelay(36, () -> {
+            elapseMockCooldown(player);
+            var cow = test.spawnWithNoFreeWill(EntityType.COW, new Vec3(0.5, 2, 0.5));
+            pointAt(player, cow.position(), 0.4);
+            var result = UseEntityCallback.EVENT.invoker().interact(player, level, InteractionHand.MAIN_HAND,
+                cow, new EntityHitResult(cow));
+            test.assertValueEqual(result, InteractionResult.SUCCESS, "Thaumometer uses the shared creature scan route");
+            cow.discard();
+            test.assertValueEqual(specimens(ResearchJournalItem.snapshot(player)), List.of(
+                "block:stone", "block:torch", "item:feather", "item:water_bucket", "entity:cow"),
+                "Exactly the expected specimens are recorded");
+        });
+        test.runAfterDelay(45, () -> {
+            elapseMockCooldown(player);
+            var observed = ResearchJournalItem.snapshot(player);
+            var above = stone.getCenter();
+            player.moveTo(above.x, above.y + 5, above.z, 0, -90);
+            var localAura = AuraService.read(level, measuredChunk);
+            useLensInAir(player);
+            test.assertValueEqual(ResearchJournalItem.snapshot(player), observed, "Measuring empty air adds no new observation");
+            test.assertValueEqual(AuraService.read(level, measuredChunk), localAura, "Measuring the local aura does not drain it");
+            test.succeed();
+        });
+    }
+
+    private static void elapseMockCooldown(ServerPlayer player) {
+        // The embedded GameTest player does not drive its inventory cooldown clock.
+        for (int tick = 0; tick < 9; tick++) {
+            player.getCooldowns().tick();
+        }
     }
 
     @GameTest(template = EMPTY_STRUCTURE)

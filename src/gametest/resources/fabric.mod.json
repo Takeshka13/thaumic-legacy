@@ -9,7 +9,8 @@
       "dev.thaumiclegacy.research.FieldObservationGameTest",
       "dev.thaumiclegacy.aura.AuraGameTest",
       "dev.thaumiclegacy.workbench.ArcaneWorkbenchGameTest",
-      "dev.thaumiclegacy.alchemy.CrucibleGameTest"
+      "dev.thaumiclegacy.alchemy.CrucibleGameTest",
+      "dev.thaumiclegacy.wand.WandGameTest"
     ]
   },
   "depends": {

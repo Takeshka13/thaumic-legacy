@@ -1,17 +1,13 @@
 package dev.thaumiclegacy.aura;
 
+import dev.thaumiclegacy.research.FieldLensItem;
+import dev.thaumiclegacy.revealing.RevealingSight;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.Level;
 
-public final class ThaumometerItem extends Item {
+public final class ThaumometerItem extends FieldLensItem {
 	private static final int READING_COOLDOWN_TICKS = 8;
 
 	public ThaumometerItem(Properties properties) {
@@ -19,33 +15,27 @@ public final class ThaumometerItem extends Item {
 	}
 
 	@Override
-	public InteractionResult useOn(UseOnContext context) {
-		if (context.getPlayer() == null || !measure(context.getPlayer())) {
-			return InteractionResult.PASS;
-		}
-		return InteractionResult.sidedSuccess(context.getLevel().isClientSide());
+	protected boolean canScan(Player player) {
+		return super.canScan(player) && !player.getCooldowns().isOnCooldown(this);
 	}
 
 	@Override
-	public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-		ItemStack held = player.getItemInHand(hand);
-		return measure(player) ? InteractionResultHolder.sidedSuccess(held, level.isClientSide())
-			: InteractionResultHolder.pass(held);
-	}
-
-	private boolean measure(Player player) {
-		if (player.getCooldowns().isOnCooldown(this)) {
-			return false;
-		}
-		if (player instanceof ServerPlayer serverPlayer) {
-			if (!ServerPlayNetworking.canSend(serverPlayer, AuraReadingPayload.TYPE)) {
-				return false;
-			}
-			var reading = AuraService.read(serverPlayer.serverLevel(), serverPlayer.chunkPosition());
-			player.getCooldowns().addCooldown(this, READING_COOLDOWN_TICKS);
-			ServerPlayNetworking.send(serverPlayer,
+	protected void beginScan(ServerPlayer player) {
+		player.getCooldowns().addCooldown(this, READING_COOLDOWN_TICKS);
+		if (ServerPlayNetworking.canSend(player, AuraReadingPayload.TYPE)) {
+			var reading = AuraService.read(player.serverLevel(), player.chunkPosition());
+			ServerPlayNetworking.send(player,
 				new AuraReadingPayload(reading.vis(), reading.capacity(), reading.flux(), reading.recoveryTicks()));
 		}
-		return true;
+	}
+
+	@Override
+	protected boolean revealBlock(ServerPlayer player, BlockPos target) {
+		return RevealingSight.measureCrucible(player, target);
+	}
+
+	@Override
+	protected void onAirScan(ServerPlayer player) {
+		// The aura reading supplies feedback when the Thaumometer has no specimen in focus.
 	}
 }

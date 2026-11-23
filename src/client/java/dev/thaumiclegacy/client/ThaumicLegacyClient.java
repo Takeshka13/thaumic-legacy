@@ -4,6 +4,7 @@ import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.revealing.RevealingPayload;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
@@ -28,13 +29,18 @@ public class ThaumicLegacyClient implements ClientModInitializer {
 			scanFeedback.show(context.client(), payload));
 		AuraReadingOverlay auraReading = new AuraReadingOverlay();
 		ClientPlayNetworking.registerGlobalReceiver(AuraReadingPayload.TYPE, (payload, context) -> auraReading.show(payload));
+		RevealingOverlay revealing = new RevealingOverlay();
+		ClientPlayNetworking.registerGlobalReceiver(RevealingPayload.TYPE, (payload, context) ->
+			revealing.show(context.client(), payload));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			scanFeedback.clear();
 			auraReading.clear();
+			revealing.clear();
 		});
 		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> {
 			scanFeedback.render(graphics);
 			auraReading.render(graphics);
+			revealing.render(graphics);
 		});
 	}
 }

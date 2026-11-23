@@ -3,7 +3,9 @@
 	"package": "dev.thaumiclegacy.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"AlchemyItemEntityMixin",
+		"ItemEntityThrowerAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

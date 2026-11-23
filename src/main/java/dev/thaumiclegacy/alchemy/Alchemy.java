@@ -1,6 +1,7 @@
 package dev.thaumiclegacy.alchemy;
 
 import dev.thaumiclegacy.ThaumicLegacy;
+import dev.thaumiclegacy.aura.ThaumometerItem;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -8,20 +9,25 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.PushReaction;
 
 public final class Alchemy {
+	static final String OUTPUT_TAG = "thaumiclegacy.alchemy_output";
 	private static final ResourceLocation CRUCIBLE_ID = ThaumicLegacy.id("crucible");
 	private static final ResourceLocation RECIPE_ID = ThaumicLegacy.id("alchemy");
 
@@ -45,6 +51,18 @@ public final class Alchemy {
 	private Alchemy() {
 	}
 
+	public static boolean providesHeat(BlockState state) {
+		return AlchemyConfig.current().providesHeat(state);
+	}
+
+	public static boolean isIntakeOutput(ItemEntity item) {
+		return item.getTags().contains(OUTPUT_TAG);
+	}
+
+	public static boolean isCatalyst(ServerLevel level, ItemStack stack) {
+		return level.getRecipeManager().getRecipeFor(RECIPE_TYPE, new AlchemyRecipe.CatalystInput(stack), level).isPresent();
+	}
+
 	public static void register() {
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS)
 				.register(entries -> entries.accept(CRUCIBLE_ITEM));
@@ -52,7 +70,8 @@ public final class Alchemy {
 		// Vanilla skips block item-use callbacks while sneaking with an item in hand.
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			var pos = hit.getBlockPos();
-			if (player.isSpectator() || !level.hasChunkAt(pos) || !level.getBlockState(pos).is(CRUCIBLE)) {
+			if (player.isSpectator() || player.getItemInHand(hand).getItem() instanceof ThaumometerItem
+					|| !level.hasChunkAt(pos) || !level.getBlockState(pos).is(CRUCIBLE)) {
 				return InteractionResult.PASS;
 			}
 			if (player instanceof ServerPlayer serverPlayer

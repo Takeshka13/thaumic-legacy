@@ -15,12 +15,12 @@ At the Arcane Workbench, place a Resonant Copper above a vanilla cauldron. Craft
 ## Operation
 
 1. Place the crucible directly above fire, soul fire, lava, a magma block, or a lit campfire. Use a water bucket on the empty crucible. It takes 100 consecutive game ticks of heat to become ready with the default settings.
-2. Use an empty hand to check the water, heat, and stored aspects. Heat loss resets the warmup, while the water and stock stay in the crucible.
-3. Use each ingredient on the heated crucible to dissolve one item. It uses the current item aspect profile. A placeable block item can use its block profile when it lacks a dedicated item profile.
-4. Crouch and use the catalyst on the crucible. The server checks recipe requirements, research and output space before consuming the catalyst and the specified aspects. Water and unused aspect units remain in the crucible.
-5. Crouch and use an empty bucket on the filled crucible to drain it. You recover a water bucket and all leftover aspects become local Flux. Breaking the crucible vents its leftover aspects as well. With the default settings every eight units of residue add one Flux, rounding up and respecting the aura cap. Observe the local Flux with the Thaumometer and use Cleansing Salt to remove up to eight Flux from the chunk.
+2. Check the basin with an empty hand, the Thaumometer, or worn Goggles of Revealing. Heat loss resets the warmup, while the water and stock stay in the crucible.
+3. Aim at the basin opening and drop ingredients with Q. Items must physically land inside the mouth. The hot basin takes one unit from a stack at a time. The item aspect profile takes priority, with the block profile as a fallback for placeable items.
+4. Drop the catalyst into the mixture. The server checks known recipes and the thrower's research before dissolving the item. A match with enough Essentia spends the listed amounts and spits out the result above the rim. An authorized catalyst with insufficient Essentia can dissolve using its normal profile. Locked catalysts stay as items. Water and unused Essentia remain in the basin.
+5. Crouch and right-click with an empty hand to drain the basin. A crouching empty-bucket interaction can recover the water. Disposing of residue through either control or by breaking the Crucible adds one Flux per eight units, rounding up and respecting the aura cap. Inspect local Flux with the Thaumometer and use Cleansing Salt to remove up to eight Flux.
 
-The default reservoir holds 64 aspect units. An addition that would exceed capacity preserves the entire input. A failed catalyst attempt preserves the catalyst and the stored mixture. The server allows one successful mutation per Crucible every four game ticks, including when different players share it. Aspect residue stays in the vessel until used, drained, or released by breaking the block. Offering held items gives the server a player to check for research.
+The default reservoir holds 64 aspect units. An addition that would exceed capacity preserves the whole incoming unit. The server bounds intake and shares its cooldown across players. Crafted output entities stay outside the intake logic until picked up. This keeps products from dissolving in the same vessel while they are still bouncing over it.
 
 ## Products
 
@@ -42,6 +42,6 @@ The Crucible block state records water and the visible phase. Its block entity r
 
 ## Known limitations
 
-- Inputs and catalysts are offered by hand. Players inspect the mixture in chat. The Crucible has no interface inventory, dropped-item intake, or automated transfer.
+- Inputs enter as dropped items. Research-gated catalysts need an attributable, live player thrower. Automated transfer and passive crafting without an actor remain future work.
 - A Crucible holds one bucket of water and one mixed reservoir. Successful crafts keep the water. Residue stays in the vessel until it is used, drained, or released when the block is broken. Distillation, portable Essentia storage, and pipes are future work.
 - Clean dedicated-server restart and simulated shared use were verified. Testing two real clients on the same Crucible and recovery after an abrupt shutdown remain open.

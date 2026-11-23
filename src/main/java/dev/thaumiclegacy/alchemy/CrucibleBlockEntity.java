@@ -20,6 +20,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -29,8 +30,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -38,9 +43,13 @@ public final class CrucibleBlockEntity extends BlockEntity {
 	private static final String MESSAGE = "message.thaumiclegacy.crucible.";
 	private static final int VERSION = 1;
 	private static final int COOLDOWN_TICKS = 4;
+	private static final int MAX_INTAKE_CANDIDATES = 32;
+	private static final AABB INTAKE = new AABB(3 / 16.0, 14 / 16.0, 3 / 16.0, 13 / 16.0, 1.25, 13 / 16.0);
 	private final Map<String, Integer> aspects = new TreeMap<>();
 	private int heatTicks;
 	private long lastChangeTick = Long.MIN_VALUE;
+	private long lastIntakeTick = Long.MIN_VALUE;
+	private int lastIntakeCandidate;
 
 	CrucibleBlockEntity(BlockPos pos, BlockState state) {
 		super(Alchemy.CRUCIBLE_ENTITY, pos, state);
@@ -52,8 +61,9 @@ public final class CrucibleBlockEntity extends BlockEntity {
 	}
 
 	static void tick(Level level, BlockPos pos, BlockState state, CrucibleBlockEntity crucible) {
-		if (level instanceof ServerLevel server && state.getValue(CrucibleBlock.PHASE) != Phase.EMPTY) {
-			crucible.refreshHeat(server, state.getValue(CrucibleBlock.PHASE), true);
+		if (level instanceof ServerLevel server
+				&& crucible.refreshHeat(server, state.getValue(CrucibleBlock.PHASE), true) == Phase.READY) {
+			crucible.checkIntake(server);
 		}
 	}
 
@@ -67,7 +77,7 @@ public final class CrucibleBlockEntity extends BlockEntity {
 		}
 		Phase phase = refreshHeat(server, getBlockState().getValue(CrucibleBlock.PHASE), false);
 		ItemStack held = player.getItemInHand(hand);
-		if (held.isEmpty()) {
+		if (held.isEmpty() && !player.isShiftKeyDown()) {
 			describe(player, phase);
 			return false;
 		}
@@ -80,13 +90,12 @@ public final class CrucibleBlockEntity extends BlockEntity {
 		if (held.is(Items.WATER_BUCKET)) {
 			changed = fill(player, hand, phase);
 		} else if (held.is(Items.BUCKET)) {
-			changed = player.isShiftKeyDown() ? purge(player, hand, phase) : reject(player, "purge_requires_sneak");
-		} else if (phase == Phase.EMPTY) {
-			changed = reject(player, "needs_water");
-		} else if (phase != Phase.READY) {
-			changed = reject(player, "not_ready");
+			changed = player.isShiftKeyDown() ? purge(player, hand, phase, true) : reject(player, "purge_requires_sneak");
+		} else if (held.isEmpty()) {
+			changed = purge(player, hand, phase, false);
 		} else {
-			changed = player.isShiftKeyDown() ? craft(player, hand, held) : dissolve(player, hand, held);
+			changed = reject(player, phase == Phase.EMPTY ? "needs_water"
+					: phase == Phase.READY ? "throw_ingredients" : "not_ready");
 		}
 		if (changed) {
 			lastChangeTick = now;
@@ -142,15 +151,17 @@ public final class CrucibleBlockEntity extends BlockEntity {
 		return true;
 	}
 
-	private boolean purge(ServerPlayer player, InteractionHand hand, Phase phase) {
+	private boolean purge(ServerPlayer player, InteractionHand hand, Phase phase, boolean collectWater) {
 		if (phase == Phase.EMPTY) {
 			return reject(player, "needs_water");
 		}
-		AlchemyInventory inventory = AlchemyInventory.plan(player, hand, Items.WATER_BUCKET.getDefaultInstance());
-		if (inventory == null) {
-			return reject(player, "inventory_full");
+		if (collectWater) {
+			AlchemyInventory inventory = AlchemyInventory.plan(player, hand, Items.WATER_BUCKET.getDefaultInstance());
+			if (inventory == null) {
+				return reject(player, "inventory_full");
+			}
+			inventory.apply(player);
 		}
-		inventory.apply(player);
 		ServerLevel server = player.serverLevel();
 		int flux = releaseResidue(server);
 		heatTicks = 0;
@@ -171,60 +182,127 @@ public final class CrucibleBlockEntity extends BlockEntity {
 		return AuraService.addFlux(server, new ChunkPos(worldPosition), (total + unitsPerFlux - 1) / unitsPerFlux);
 	}
 
-	private boolean dissolve(ServerPlayer player, InteractionHand hand, ItemStack held) {
+	private void checkIntake(ServerLevel server) {
+		long now = server.getGameTime();
+		if (lastIntakeTick != Long.MIN_VALUE && now >= lastIntakeTick && now - lastIntakeTick < COOLDOWN_TICKS) {
+			return;
+		}
+		lastIntakeTick = now;
+		AABB bounds = INTAKE.move(worldPosition);
+		List<ItemEntity> candidates = new ArrayList<>();
+		collectCandidates(server, bounds, lastIntakeCandidate, candidates);
+		if (candidates.isEmpty() && lastIntakeCandidate != 0) {
+			lastIntakeCandidate = 0;
+			collectCandidates(server, bounds, 0, candidates);
+		}
+		candidates.sort(Comparator.comparingInt(ItemEntity::getId));
+		for (ItemEntity candidate : candidates) {
+			lastIntakeCandidate = candidate.getId();
+			if (accept(server, candidate)) {
+				return;
+			}
+		}
+	}
+
+	private static void collectCandidates(ServerLevel server, AABB bounds, int afterId, List<ItemEntity> candidates) {
+		server.getEntities(EntityTypeTest.forClass(ItemEntity.class), bounds,
+				item -> item.getId() > afterId && item.isAlive() && !item.getItem().isEmpty()
+						&& bounds.contains(item.position()) && !Alchemy.isIntakeOutput(item),
+				candidates, MAX_INTAKE_CANDIDATES);
+	}
+
+	private boolean accept(ServerLevel server, ItemEntity entity) {
+		ItemStack held = entity.getItem();
+		var input = new AlchemyRecipe.CatalystInput(held);
+		var matches = server.getRecipeManager().getRecipesFor(Alchemy.RECIPE_TYPE, input, server);
 		var catalog = AspectCatalog.current();
+		ServerPlayer thrower = entity.getOwner() instanceof ServerPlayer player && player.serverLevel() == server
+				&& player.isAlive() && !player.isSpectator() ? player : null;
+		if (!matches.isEmpty()) {
+			var authorized = matches.stream().sorted(Comparator.comparing(RecipeHolder::id))
+					.map(RecipeHolder::value)
+					.filter(recipe -> recipe.research().isEmpty() || thrower != null
+							&& ResearchProgress.isUnlocked(thrower, recipe.research().get()))
+					.toList();
+			if (authorized.isEmpty()) {
+				return false;
+			}
+			var recipe = authorized.stream().filter(candidate -> candidate.hasAspects(aspects, catalog)).findFirst().orElse(null);
+			if (recipe != null) {
+				return craft(server, entity, thrower, recipe, input);
+			}
+		}
+		return dissolve(server, entity, thrower, catalog);
+	}
+
+	private boolean dissolve(ServerLevel server, ItemEntity entity, ServerPlayer thrower, AspectCatalog catalog) {
+		ItemStack held = entity.getItem();
 		var profile = catalog.aspects("item", BuiltInRegistries.ITEM.getKey(held.getItem()));
 		if (profile.isEmpty() && held.getItem() instanceof BlockItem blockItem) {
 			profile = catalog.aspects("block", BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()));
 		}
 		if (profile.isEmpty()) {
-			return reject(player, "no_profile");
+			return false;
 		}
 		long added = profile.values().stream().mapToLong(Integer::longValue).sum();
-		if (added > AlchemyConfig.current().capacity() - totalAspects()) {
-			return reject(player, "full");
-		}
-		AlchemyInventory inventory = AlchemyInventory.plan(player, hand, AlchemyInventory.remainder(held));
-		if (inventory == null) {
-			return reject(player, "inventory_full");
+		if (added > AlchemyConfig.current().capacity() - totalAspects()
+				|| !emit(server, AlchemyInventory.remainder(held))) {
+			return false;
 		}
 		Component name = held.getHoverName();
-		inventory.apply(player);
+		consumeOne(entity);
 		profile.forEach((id, amount) -> aspects.merge(id, amount, Integer::sum));
-		effect(player.serverLevel(), ParticleTypes.BUBBLE_POP, SoundEvents.BREWING_STAND_BREW);
-		feedback(player, "dissolved", name, (int) added);
+		setChanged();
+		effect(server, ParticleTypes.BUBBLE_POP, SoundEvents.BREWING_STAND_BREW);
+		if (thrower != null) {
+			feedback(thrower, "dissolved", name, (int) added);
+		}
 		return true;
 	}
 
-	private boolean craft(ServerPlayer player, InteractionHand hand, ItemStack held) {
-		ServerLevel server = player.serverLevel();
-		var input = new AlchemyRecipe.CatalystInput(held);
-		var matches = server.getRecipeManager().getRecipesFor(Alchemy.RECIPE_TYPE, input, server);
-		if (matches.isEmpty()) {
-			return reject(player, "no_recipe");
-		}
-		var catalog = AspectCatalog.current();
-		var authorized = matches.stream().sorted(Comparator.comparing(RecipeHolder::id))
-				.map(RecipeHolder::value)
-				.filter(recipe -> recipe.research().isEmpty() || ResearchProgress.isUnlocked(player, recipe.research().get()))
-				.toList();
-		if (authorized.isEmpty()) {
-			return reject(player, "research_required");
-		}
-		var recipe = authorized.stream().filter(candidate -> candidate.hasAspects(aspects, catalog)).findFirst().orElse(null);
-		if (recipe == null) {
-			return reject(player, "missing_aspects");
-		}
+	private boolean craft(ServerLevel server, ItemEntity entity, ServerPlayer thrower, AlchemyRecipe recipe,
+							AlchemyRecipe.CatalystInput input) {
 		ItemStack result = recipe.assemble(input, server.registryAccess());
-		AlchemyInventory inventory = AlchemyInventory.plan(player, hand, result, AlchemyInventory.remainder(held));
-		if (inventory == null) {
-			return reject(player, "inventory_full");
+		if (result.isEmpty() || !emit(server, result, AlchemyInventory.remainder(input.held()))) {
+			return false;
 		}
-		inventory.apply(player);
+		consumeOne(entity);
 		recipe.aspects().forEach((id, cost) -> aspects.compute(id, (key, stored) -> stored == cost.intValue() ? null : stored - cost));
+		setChanged();
 		effect(server, ParticleTypes.EFFECT, SoundEvents.BREWING_STAND_BREW);
-		feedback(player, "crafted", result.getHoverName(), result.getCount());
+		if (thrower != null) {
+			feedback(thrower, "crafted", result.getHoverName(), result.getCount());
+		}
 		return true;
+	}
+
+	private boolean emit(ServerLevel server, ItemStack... outputs) {
+		List<ItemEntity> emitted = new ArrayList<>(outputs.length);
+		for (ItemStack output : outputs) {
+			if (output.isEmpty()) {
+				continue;
+			}
+			double motion = emitted.isEmpty() ? 0.065 : -0.065;
+			ItemEntity entity = new ItemEntity(server, worldPosition.getX() + 0.5, worldPosition.getY() + 1.12,
+					worldPosition.getZ() + 0.5, output.copy(), motion, 0.16, 0);
+			entity.addTag(Alchemy.OUTPUT_TAG);
+			entity.setDefaultPickUpDelay();
+			if (!server.addFreshEntity(entity) || entity.isRemoved()) {
+				emitted.forEach(ItemEntity::discard);
+				return false;
+			}
+			emitted.add(entity);
+		}
+		return true;
+	}
+
+	private static void consumeOne(ItemEntity entity) {
+		ItemStack remainder = entity.getItem().copyWithCount(entity.getItem().getCount() - 1);
+		if (remainder.isEmpty()) {
+			entity.discard();
+		} else {
+			entity.setItem(remainder);
+		}
 	}
 
 	private int totalAspects() {

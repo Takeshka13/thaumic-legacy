@@ -8,7 +8,7 @@ The original journal describes obtaining the workbench by applying Salis Mundus 
 
 ## Arcane Foundations
 
-Research requires the first observation milestone and knowledge of Lux. Scan stone and a torch with the Field Lens to complete the first milestone. Scan a feather to learn Aer. Together with the torch's Ignis and Lux evidence, Aer unlocks Lux and Arcane Foundations. The research uses discoveries already saved for that player. It adds zero fields to the world save. The journal reports the same server-side milestone that gates recipes.
+Research requires the first observation milestone and knowledge of Lux. Scan stone and a torch with the Thaumometer to complete the first milestone. Scan a feather to learn Aer. Together with the torch's Ignis and Lux evidence, Aer unlocks Lux and Arcane Foundations. The research uses discoveries already saved for that player. It adds zero fields to the world save. The journal reports the same server-side milestone that gates recipes.
 
 ## Recipes
 

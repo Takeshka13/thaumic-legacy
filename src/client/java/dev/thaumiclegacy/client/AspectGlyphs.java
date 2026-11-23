@@ -28,10 +28,13 @@ final class AspectGlyphs {
 	private AspectGlyphs() {}
 
 	static void draw(GuiGraphics graphics, AspectView aspect, int x, int y) {
-		int glyph = aspect.glyph();
-		boolean known = !aspect.id().isEmpty() && glyph >= 0 && glyph < GLYPHS.length;
+		draw(graphics, aspect.id(), aspect.glyph(), aspect.color(), x, y);
+	}
+
+	static void draw(GuiGraphics graphics, String id, int glyph, int color, int x, int y) {
+		boolean known = !id.isEmpty() && glyph >= 0 && glyph < GLYPHS.length;
 		String pattern = known ? GLYPHS[glyph] : UNKNOWN;
-		int ink = known ? 0xFF000000 | aspect.color() : UNKNOWN_COLOR;
+		int ink = known ? 0xFF000000 | color : UNKNOWN_COLOR;
 		graphics.fill(x, y, x + 11, y + 11, BADGE);
 		for (int row = 0; row < 7; row++) {
 			int pixels = Integer.parseInt(pattern, row * 2, row * 2 + 2, 16);

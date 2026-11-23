@@ -1,0 +1,11 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": ["L L", "CCC"],
+  "key": {
+    "L": {"item": "thaumiclegacy:attuned_lens"},
+    "C": {"item": "minecraft:leather"}
+  },
+  "result": {"id": "thaumiclegacy:goggles_of_revealing", "count": 1},
+  "vis_cost": 24,
+  "research": "thaumiclegacy:arcane_foundations"
+}

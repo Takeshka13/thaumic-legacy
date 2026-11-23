@@ -7,10 +7,13 @@ import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.aura.ThaumometerItem;
 import dev.thaumiclegacy.item.AuraSurveyorItem;
 import dev.thaumiclegacy.item.CleansingSaltItem;
+import dev.thaumiclegacy.revealing.GogglesItem;
+import dev.thaumiclegacy.revealing.RevealingSight;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ResearchJournalItem;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.wand.WandItem;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -39,12 +42,15 @@ public class ThaumicLegacy implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		Item fieldLens = Registry.register(BuiltInRegistries.ITEM, id("field_lens"),
+		Registry.register(BuiltInRegistries.ITEM, id("field_lens"),
 				new FieldLensItem(new Item.Properties().stacksTo(1)));
 		Item researchJournal = Registry.register(BuiltInRegistries.ITEM, id("research_journal"),
 				new ResearchJournalItem(new Item.Properties().stacksTo(1)));
 		Item thaumometer = Registry.register(BuiltInRegistries.ITEM, id("thaumometer"),
 				new ThaumometerItem(new Item.Properties().stacksTo(1)));
+		Item goggles = Registry.register(BuiltInRegistries.ITEM, id("goggles_of_revealing"),
+				new GogglesItem(new Item.Properties().stacksTo(1)));
+		Item wand = Registry.register(BuiltInRegistries.ITEM, id("wand"), new WandItem(new Item.Properties()));
 		Item resonantCopper = Registry.register(BuiltInRegistries.ITEM, id("resonant_copper"), new Item(new Item.Properties()));
 		Item attunedLens = Registry.register(BuiltInRegistries.ITEM, id("attuned_lens"), new Item(new Item.Properties()));
 		Item auraSurveyor = Registry.register(BuiltInRegistries.ITEM, id("aura_surveyor"),
@@ -59,10 +65,12 @@ public class ThaumicLegacy implements ModInitializer {
 		FuelRegistry.INSTANCE.add(emberSalt, 4_800);
 		ArcaneWorkbench.register();
 		Alchemy.register();
+		RevealingSight.register(goggles);
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {
-			entries.accept(fieldLens);
 			entries.accept(researchJournal);
 			entries.accept(thaumometer);
+			entries.accept(goggles);
+			entries.accept(wand);
 			entries.accept(auraSurveyor);
 			entries.accept(cleansingSalt);
 		});

@@ -26,18 +26,19 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-public final class FieldLensItem extends Item {
+public class FieldLensItem extends Item {
 	public FieldLensItem(Properties properties) {
 		super(properties);
 	}
 
 	public static void registerEntityInteraction() {
 		UseEntityCallback.EVENT.register((player, world, hand, entity, ignored) -> {
-			if (player.isSpectator() || !(player.getItemInHand(hand).getItem() instanceof FieldLensItem)
+			if (!(player.getItemInHand(hand).getItem() instanceof FieldLensItem lens) || !lens.canScan(player)
 					|| !candidate(entity)) {
 				return InteractionResult.PASS;
 			}
 			if (player instanceof ServerPlayer serverPlayer) {
+				lens.beginScan(serverPlayer);
 				if (!observeHeldItem(serverPlayer, hand)) {
 					Entity target = findEntity(serverPlayer);
 					if (target == entity) {
@@ -53,7 +54,11 @@ public final class FieldLensItem extends Item {
 
 	@Override
 	public InteractionResult useOn(UseOnContext context) {
+		if (context.getPlayer() == null || !canScan(context.getPlayer())) {
+			return InteractionResult.PASS;
+		}
 		if (context.getPlayer() instanceof ServerPlayer player) {
+			beginScan(player);
 			if (observeHeldItem(player, context.getHand())) {
 				return InteractionResult.CONSUME;
 			}
@@ -74,7 +79,12 @@ public final class FieldLensItem extends Item {
 
 	@Override
 	public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+		ItemStack held = player.getItemInHand(hand);
+		if (!canScan(player)) {
+			return InteractionResultHolder.pass(held);
+		}
 		if (player instanceof ServerPlayer serverPlayer) {
+			beginScan(serverPlayer);
 			if (!observeHeldItem(serverPlayer, hand)) {
 				Entity target = findEntity(serverPlayer);
 				if (target != null) {
@@ -84,12 +94,27 @@ public final class FieldLensItem extends Item {
 					if (hit.getType() == HitResult.Type.BLOCK) {
 						observeBlock(serverPlayer, hit.getBlockPos());
 					} else {
-						noTarget(serverPlayer);
+						onAirScan(serverPlayer);
 					}
 				}
 			}
 		}
-		return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide());
+		return InteractionResultHolder.sidedSuccess(held, level.isClientSide());
+	}
+
+	protected boolean canScan(Player player) {
+		return player.isAlive() && !player.isSpectator();
+	}
+
+	protected void beginScan(ServerPlayer player) {
+	}
+
+	protected boolean revealBlock(ServerPlayer player, BlockPos target) {
+		return false;
+	}
+
+	protected void onAirScan(ServerPlayer player) {
+		noTarget(player);
 	}
 
 	private static boolean observeHeldItem(ServerPlayer player, InteractionHand hand) {
@@ -142,7 +167,10 @@ public final class FieldLensItem extends Item {
 		return null;
 	}
 
-	private static void observeBlock(ServerPlayer player, BlockPos target) {
+	private void observeBlock(ServerPlayer player, BlockPos target) {
+		if (revealBlock(player, target)) {
+			return;
+		}
 		var state = player.serverLevel().getBlockState(target);
 		ResourceLocation legacy = ObservationCatalog.find(state);
 		ResourceLocation id = legacy == null ? BuiltInRegistries.BLOCK.getKey(state.getBlock()) : legacy;

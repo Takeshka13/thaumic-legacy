@@ -7,7 +7,7 @@ Thaumic Legacy is an independent magic mod for Minecraft 1.21.1, Fabric, and Jav
 | Stage | Status | Depends on | Completion gate |
 | --- | --- | --- | --- |
 | 1. Project Foundation | Complete locally | Existing Fabric scaffold | Build and launch both environments on Java 21. Verify mod loading and a clean dedicated-server shutdown. |
-| 2. Field Observation | Complete locally. Two-client verification pending. | 1 | Craft a Field Lens and Research Journal, observe three vanilla blocks, unlock the first research entry, and retain progress after restart. Verify that two real clients on a dedicated server see independent progress before closing multiplayer QA. |
+| 2. Field Observation | Complete locally. Two-client verification pending. | 1 | Craft a Thaumometer and Research Journal, observe three vanilla blocks, unlock the first research entry, and retain progress after restart. Verify that two real clients on a dedicated server see independent progress before closing multiplayer QA. |
 | 3. Aura and Magical Crafting | Aura & Flux Foundation and Arcane Workbench complete and verified locally. Two-client QA and balance tuning remain open. | 2 | Three shaped recipes spend local Vis. Arcane Foundations gates advanced recipes. Save and reload preserve the workbench grid, research, and aura ledger. |
 | 4. Experiments and Alchemy | Alchemy Foundation complete and verified locally. Two-client QA, distillation, and transport remain open. | 2, 3 | Players unlock Alchemy Foundations, craft a Crucible, extract Essentia, and use catalysts. The mixture survives reloads and discarded residue affects local Flux. |
 | 5. Workshop Logistics | Planned | 4 | Filters, valves, and buffers supply two consumers on one bounded network. Backpressure, unavailable endpoints, and reload preserve stored material. |
@@ -38,7 +38,7 @@ The GitHub Actions workflow selects JDK 21. Verification on a hosted GitHub runn
 
 ### Aspect Discovery extension
 
-The Field Lens and Research Journal use 52 classic aspects across 98 bundled specimen profiles. The Thaumcraft 6 API supplies the baseline, with compatible historical extensions from Thaumcraft 4. Discovery uses evidence and compound prerequisites. Versioned per-player storage preserves earlier discoveries and observations. See [Aspect Discovery](ASPECTS.md) for controls, data conventions, and multiplayer checks.
+The Thaumometer and Research Journal use 52 classic aspects across 98 bundled specimen profiles. The Thaumcraft 6 API supplies the baseline, with compatible historical extensions from Thaumcraft 4. Discovery uses evidence and compound prerequisites. Versioned per-player storage preserves earlier discoveries and observations. See [Aspect Discovery](ASPECTS.md) and [Classic Magical Tools](CLASSIC_TOOLS.md).
 
 ### Aura and Flux foundation
 
@@ -46,8 +46,12 @@ The foundation is functional and locally verified. The server stores one indepen
 
 ### Arcane Workbench
 
-The first magical crafting loop connects Field Lens observations, Lux discovery, the Research Journal, and local Vis. A persistent shared grid supports three recipes, including the Aura Surveyor for comparing neighboring chunks. Local verification covers exact Vis charges, rejection of replayed requests, and preservation of the grid and aura after a dedicated-server restart. The two-real-client scenario remains open. See [Arcane Workbench](ARCANE_WORKBENCH.md) and [Arcane Workbench Testing](ARCANE_WORKBENCH_TESTING.md).
+The first magical crafting loop connects Thaumometer observations, Lux discovery, the Research Journal, and local Vis. A persistent shared grid supports three recipes, including the Aura Surveyor for comparing neighboring chunks. Local verification covers exact Vis charges, rejection of replayed requests, and preservation of the grid and aura after a dedicated-server restart. The two-real-client scenario remains open. See [Arcane Workbench](ARCANE_WORKBENCH.md) and [Arcane Workbench Testing](ARCANE_WORKBENCH_TESTING.md).
 
 ### Alchemy Foundation
 
-Alchemy Foundations connects the existing research graph and Aqua discovery to Crucible construction through the Arcane Workbench. The Crucible uses heat and water to extract listed aspects from items, holds a bounded mixture, and consumes catalysts to make three useful products. Draining or breaking it with residue adds local Flux. Local verification covers all three recipes, retained Essentia, and a dedicated-server restart. See [Alchemy](ALCHEMY.md) for limitations and [Alchemy Testing](ALCHEMY_TESTING.md) for the two-client scenario.
+Alchemy Foundations connects the existing research graph and Aqua discovery to Crucible construction through the Arcane Workbench. The heated Crucible accepts dropped items and checks each catalyst against the mixture before dissolving it. It ejects the crafted result into the world. Draining or breaking it with residue adds local Flux. See [Alchemy](ALCHEMY.md) and [Alchemy Testing](ALCHEMY_TESTING.md).
+
+### Classic Gameplay Alignment
+
+Implemented and verified locally with a Java 21 build and all 26 GameTest passing. The Thaumometer replaces the Field Lens in new progression and uses the same saved discoveries. The heated Crucible processes dropped reagents and catalysts. Worn Goggles of Revealing show the Crucible mixture and reveal nearby heat and light sources in view. The starter Wand persists six independent primal Vis reserves. Wand charging and aura nodes remain planned. The two-real-client scenario remains open. [Classic Magical Tools](CLASSIC_TOOLS.md) · [Alchemy Testing](ALCHEMY_TESTING.md)

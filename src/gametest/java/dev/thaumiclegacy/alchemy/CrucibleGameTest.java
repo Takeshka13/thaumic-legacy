@@ -19,6 +19,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -30,6 +31,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 
 public class CrucibleGameTest implements FabricGameTest {
@@ -60,121 +62,157 @@ public class CrucibleGameTest implements FabricGameTest {
         test.succeed();
     }
 
-    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 220)
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 225)
     public void heatsAndAccumulatesProfilesWithoutOverfilling(GameTestHelper test) {
         var crucible = new Fixture(test);
         var first = crucible.newPlayer(test);
         var second = crucible.newPlayer(test);
         test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.EMPTY, "The placed crucible starts empty");
-        expectHeld(test, crucible.use(first, stack(Items.CHARCOAL), false), Items.CHARCOAL, 1, "A dry crucible refuses ingredients");
-        expectHeld(test, crucible.use(first, stack(Items.WATER_BUCKET), false), Items.BUCKET, 1, "Filling returns an empty bucket");
-        test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.FILLED, "Water is stored before heat is supplied");
-        var unlit = Blocks.CAMPFIRE.defaultBlockState().setValue(BlockStateProperties.LIT, false);
-        crucible.heat(unlit);
-        test.runAfterDelay(4, () -> {
-            test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.FILLED, "An unlit campfire does not heat the crucible");
-            expectHeld(test, crucible.use(first, stack(Items.CHARCOAL), false), Items.CHARCOAL, 1, "A cold crucible refuses ingredients");
-            crucible.heat(Blocks.MAGMA_BLOCK.defaultBlockState());
+        var dry = crucible.drop(first, Items.CHARCOAL, 1);
+        test.runAfterDelay(5, () -> {
+            assertDrop(test, dry, 1, "A dry crucible refuses dropped ingredients");
+            dry.discard();
+            expectHeld(test, crucible.use(first, stack(Items.WATER_BUCKET), false), Items.BUCKET, 1, "Filling returns an empty bucket");
+            test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.FILLED, "Water is stored before heat is supplied");
+            crucible.heat(Blocks.CAMPFIRE.defaultBlockState().setValue(BlockStateProperties.LIT, false));
         });
-        test.runAfterDelay(15, () -> {
+        test.runAfterDelay(10, () -> {
+            test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.FILLED, "Unlit campfire does not provide heat");
+            var cold = crucible.drop(first, Items.CHARCOAL, 1);
+            test.runAfterDelay(5, () -> {
+                assertDrop(test, cold, 1, "A cold crucible refuses dropped ingredients");
+                cold.discard();
+                crucible.heat(Blocks.MAGMA_BLOCK.defaultBlockState());
+            });
+        });
+        test.runAfterDelay(23, () -> {
             test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.HEATING, "An active heat source begins warmup");
             test.assertTrue(crucible.entity().snapshot().heatTicks() > 0, "Warmup advances on server ticks");
             crucible.heat(Blocks.STONE.defaultBlockState());
         });
-        test.runAfterDelay(18, () -> {
+        test.runAfterDelay(26, () -> {
             test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.FILLED, "Losing heat returns the filled phase");
-            test.assertValueEqual(crucible.entity().snapshot().heatTicks(), 0, "Losing heat resets the countdown");
+            test.assertValueEqual(crucible.entity().snapshot().heatTicks(), 0, "Losing heat resets warmup");
             crucible.heat(Blocks.MAGMA_BLOCK.defaultBlockState());
         });
-        test.runAfterDelay(100, () -> test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.HEATING,
-            "A newly heated crucible must finish the complete warmup"));
-        test.runAfterDelay(125, () -> {
+        test.runAfterDelay(110, () -> test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.HEATING,
+            "Restored heat must finish the complete warmup"));
+        test.runAfterDelay(132, () -> {
             test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.READY, "Continuous heat makes the crucible ready");
-            expectHeld(test, crucible.use(first, new ItemStack(Items.STONE, 2), false), Items.STONE, 1, "Dissolving uses one block item");
-            test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("terra"), 4, id("ordo"), 1),
-                "Stone without an item assignment contributes its block profile");
-            expectHeld(test, crucible.use(second, stack(Items.CHARCOAL), false), Items.CHARCOAL, 1,
-                "The same crucible cannot accept a second player's item in the same tick");
-        });
-        test.runAfterDelay(128, () -> expectHeld(test, crucible.use(second, stack(Items.CHARCOAL), false), Items.CHARCOAL, 1,
-            "Three elapsed ticks are still inside the throttle"));
-        for (int i = 0; i < 11; i++) {
-            test.runAfterDelay(129 + 4 * i, () -> expectConsumed(test, crucible.use(second, stack(Items.STONE), false),
-                "At four ticks another ingredient can be added"));
-        }
-        test.runAfterDelay(173, () -> {
-            expectHeld(test, crucible.use(second, stack(Items.STONE), false), Items.STONE, 1,
-                "The whole ingredient is refused if its profile would exceed capacity");
-            expectConsumed(test, crucible.use(second, stack(Items.CHARCOAL), false), "A smaller dedicated item profile fits");
-            var snapshot = crucible.entity().snapshot();
-            test.assertValueEqual(snapshot.aspects(), Map.of(id("terra"), 48, id("ordo"), 12, id("ignis"), 2,
-                id("perditio"), 1), "Overflow does not change the mixture and charcoal contributes its item assignment");
-            test.assertValueEqual(snapshot.capacity(), 64, "The bundled reservoir capacity is 64");
-            var tag = crucible.entity().saveWithFullMetadata(crucible.level().registryAccess());
-            var decoded = (CrucibleBlockEntity) BlockEntity.loadStatic(crucible.pos(),
-                crucible.level().getBlockState(crucible.pos()), tag, crucible.level().registryAccess());
-            test.assertTrue(decoded != null && decoded != crucible.entity(), "A new crucible can read the saved block entity");
-            test.assertValueEqual(decoded.snapshot(), snapshot, "Saved phase, warmup, capacity and stock reload intact");
-            test.succeed();
+            expectHeld(test, crucible.use(first, new ItemStack(Items.STONE, 2), false), Items.STONE, 2,
+                "Right-click no longer dissolves held ingredients");
+            var stone = crucible.drop(first, Items.STONE, 12);
+            var charcoal = crucible.drop(second, Items.CHARCOAL, 1);
+            test.runAfterDelay(4, () -> {
+                int amount = crucible.entity().snapshot().amount();
+                test.assertTrue(amount == 5 || amount == 3, "Only one dropped item from both players enters during one intake period");
+            });
+            test.runAfterDelay(58, () -> {
+                test.assertFalse(stone.isAlive() || charcoal.isAlive(), "The dropped stack is dissolved one unit at a time");
+                var overflow = crucible.drop(second, Items.STONE, 1);
+                test.runAfterDelay(5, () -> {
+                    assertDrop(test, overflow, 1, "A whole block is refused if its profile would exceed capacity");
+                    var snapshot = crucible.entity().snapshot();
+                    test.assertValueEqual(snapshot.aspects(), Map.of(id("terra"), 48, id("ordo"), 12, id("ignis"), 2,
+                        id("perditio"), 1), "Stone contributes its block profile and charcoal its item profile");
+                    test.assertValueEqual(snapshot.capacity(), 64, "The default reservoir capacity is 64");
+                    var tag = crucible.entity().saveWithFullMetadata(crucible.level().registryAccess());
+                    var decoded = (CrucibleBlockEntity) BlockEntity.loadStatic(crucible.pos(),
+                        crucible.level().getBlockState(crucible.pos()), tag, crucible.level().registryAccess());
+                    test.assertTrue(decoded != null && decoded != crucible.entity(), "A new crucible can read the saved block entity");
+                    test.assertValueEqual(decoded.snapshot(), snapshot, "Saved phase, warmup, capacity and stock reload intact");
+                    overflow.discard();
+                    test.succeed();
+                });
+            });
         });
     }
 
-    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 180)
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 210)
     public void brewsBundledRecipesAndRejectsIncompleteTransactions(GameTestHelper test) {
         var crucible = new Fixture(test);
         var owner = crucible.newPlayer(test);
         var outsider = crucible.newPlayer(test);
         learnAlchemy(test, owner);
         test.assertFalse(ResearchProgress.isUnlocked(outsider, ResearchProgress.ALCHEMY_FOUNDATIONS),
-            "Research belongs to the player using the catalyst");
+            "Research belongs to the player who dropped the catalyst");
         crucible.heat(Blocks.MAGMA_BLOCK.defaultBlockState());
         crucible.use(owner, stack(Items.WATER_BUCKET), false);
-        scheduleIngredient(test, crucible, owner, 105, Items.CHARCOAL);
-        scheduleIngredient(test, crucible, owner, 109, Items.CHARCOAL);
-        test.runAfterDelay(113, () -> {
+        scheduleIngredient(test, crucible, owner, 105, Items.REDSTONE, 1);
+        test.runAfterDelay(111, () -> {
+            test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("potentia"), 2, id("perditio"), 1),
+                "A known catalyst with insufficient stock dissolves by its usual profile");
+            test.assertTrue(crucible.outputs(item("ember_salt")).isEmpty(), "Insufficient stock produces no recipe result");
+        });
+        scheduleIngredient(test, crucible, owner, 112, Items.CHARCOAL, 2);
+        test.runAfterDelay(124, () -> {
             var before = crucible.entity().snapshot();
-            expectHeld(test, crucible.use(outsider, stack(Items.REDSTONE), true), Items.REDSTONE, 1, "Locked catalyst is not consumed");
-            test.assertValueEqual(count(outsider, item("ember_salt")), 0, "Unqualified player receives no product");
-            expectHeld(test, crucible.use(owner, stack(Items.PAPER), true), Items.PAPER, 1, "Unknown catalyst is not consumed");
+            var locked = crucible.drop(outsider, Items.REDSTONE, 1);
+            var unowned = crucible.drop(null, Items.REDSTONE, 1);
+            var unrelated = crucible.drop(owner, Items.POISONOUS_POTATO, 1);
+            test.runAfterDelay(5, () -> {
+                assertDrop(test, locked, 1, "An unqualified thrower's catalyst remains intact");
+                assertDrop(test, unowned, 1, "An unattributed catalyst cannot bypass research");
+                assertDrop(test, unrelated, 1, "An unrelated item without a profile remains untouched");
+                test.assertValueEqual(crucible.entity().snapshot(), before, "Refused items leave stock unchanged");
+                locked.discard();
+                unowned.discard();
+                unrelated.discard();
+            });
+        });
+        test.runAfterDelay(131, () -> {
             for (int i = 0; i < owner.getInventory().getContainerSize(); i++) {
                 owner.getInventory().setItem(i, new ItemStack(Items.COBBLESTONE, 64));
             }
-            expectHeld(test, crucible.use(owner, new ItemStack(Items.REDSTONE, 2), true), Items.REDSTONE, 2,
-                "Full output storage preserves a stacked catalyst");
-            test.assertValueEqual(crucible.entity().snapshot(), before, "Refused catalysts leave the entire mixture unchanged");
-            owner.getInventory().clearContent();
-            expectHeld(test, crucible.use(owner, stack(Items.REDSTONE), true), item("ember_salt"), 1,
-                "Ember Salt replaces its consumed catalyst");
-            test.assertValueEqual(count(owner, item("ember_salt")), 1, "Ember Salt recipe gives one product");
-            test.assertTrue(crucible.entity().snapshot().aspects().isEmpty(), "Ember Salt consumes exactly Ignis 4 and Perditio 2");
+            var redstone = crucible.drop(owner, Items.REDSTONE, 2);
+            test.runAfterDelay(10, () -> {
+                test.assertFalse(redstone.isAlive(), "One redstone crafts and the remaining item dissolves");
+                var outputs = crucible.outputs(item("ember_salt"));
+                test.assertValueEqual(outputs.size(), 1, "A stacked catalyst creates one world drop with only one recipe's stock");
+                test.assertValueEqual(outputs.getFirst().getItem().getCount(), 1, "Ember Salt recipe drops exactly one product");
+                test.assertTrue(outputs.getFirst().getTags().contains("thaumiclegacy.alchemy_output"), "Ejected product has a reingestion marker");
+                test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("potentia"), 4, id("perditio"), 2),
+                    "The second redstone adds its profile without replaying the craft");
+                var output = outputs.getFirst();
+                // Keep the real output marker while making a normal dissolvable stack enter the basin again.
+                output.setItem(stack(Items.CHARCOAL));
+                crucible.center(output);
+                test.runAfterDelay(5, () -> {
+                    assertDrop(test, output, 1, "Marked world output is excluded even with a valid profile inside the basin");
+                    test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("potentia"), 4, id("perditio"), 2),
+                        "An ejected stack cannot contribute stock on re-entry");
+                    output.discard();
+                });
+            });
         });
-        test.runAfterDelay(117, () -> {
-            expectHeld(test, crucible.use(owner, stack(Items.GLASS), true), Items.GLASS, 1,
-                "A known catalyst is retained if its required aspects are missing");
-            expectConsumed(test, crucible.use(owner, stack(Items.TORCH), false), "Torch contributes its dedicated item profile");
+        scheduleIngredient(test, crucible, owner, 149, Items.TORCH, 1);
+        scheduleIngredient(test, crucible, owner, 156, Items.GLASS_BOTTLE, 1);
+        test.runAfterDelay(163, () -> {
+            var glass = crucible.drop(owner, Items.GLASS, 1);
+            test.runAfterDelay(5, () -> {
+                test.assertFalse(glass.isAlive(), "Lumen Glass consumes one glass catalyst");
+                test.assertValueEqual(crucible.outputCount(item("lumen_glass")), 2, "Lumen Glass ejects two blocks");
+                test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("ignis"), 2, id("vacuos"), 1,
+                    id("potentia"), 4, id("perditio"), 2), "Only the required aspects are removed");
+            });
         });
-        scheduleIngredient(test, crucible, owner, 121, Items.GLASS_BOTTLE);
-        test.runAfterDelay(125, () -> {
-            expectHeld(test, crucible.use(owner, stack(Items.GLASS), true), item("lumen_glass"), 2,
-                "Lumen Glass replaces its consumed glass catalyst");
-            test.assertValueEqual(count(owner, item("lumen_glass")), 2, "Lumen Glass produces exactly two blocks");
-            test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("ignis"), 2, id("vacuos"), 1),
-                "Only the required aspects are removed");
-        });
-        scheduleIngredient(test, crucible, owner, 129, Items.CLAY);
-        scheduleIngredient(test, crucible, owner, 133, Items.QUARTZ);
-        test.runAfterDelay(137, () -> {
-            expectHeld(test, crucible.use(owner, stack(Items.SUGAR), true), item("cleansing_salt"), 1,
-                "Cleansing Salt replaces its consumed sugar catalyst");
-            test.assertValueEqual(count(owner, item("cleansing_salt")), 1, "Cleansing Salt recipe gives one product");
-            test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("ignis"), 2, id("vacuos"), 1,
-                id("terra"), 2, id("vitreus"), 2), "Unused aspect units persist after all three recipes");
-            test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.READY, "Successful brewing preserves hot water");
-            test.succeed();
+        scheduleIngredient(test, crucible, owner, 170, Items.CLAY, 1);
+        scheduleIngredient(test, crucible, owner, 177, Items.QUARTZ, 1);
+        test.runAfterDelay(184, () -> {
+            var sugar = crucible.drop(owner, Items.SUGAR, 1);
+            test.runAfterDelay(5, () -> {
+                test.assertFalse(sugar.isAlive(), "Cleansing Salt consumes one sugar catalyst");
+                test.assertValueEqual(crucible.outputCount(item("cleansing_salt")), 1, "Cleansing Salt ejects exactly one item");
+                test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("ignis"), 2, id("vacuos"), 1,
+                    id("terra"), 2, id("vitreus"), 2, id("potentia"), 4, id("perditio"), 2),
+                    "Unused aspect units persist through all three recipes");
+                test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.READY, "Brewing preserves hot water");
+                test.succeed();
+            });
         });
     }
 
-    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 290)
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 365)
     public void ventsResidueExactlyOnceAndCleansLocalFlux(GameTestHelper test) {
         var crucible = new Fixture(test);
         var player = crucible.newPlayer(test);
@@ -182,9 +220,8 @@ public class CrucibleGameTest implements FabricGameTest {
         AuraService.removeFlux(crucible.level(), chunk, Integer.MAX_VALUE);
         crucible.heat(Blocks.MAGMA_BLOCK.defaultBlockState());
         crucible.use(player, stack(Items.WATER_BUCKET), false);
-        scheduleIngredient(test, crucible, player, 105, Items.STONE);
-        scheduleIngredient(test, crucible, player, 109, Items.STONE);
-        test.runAfterDelay(113, () -> {
+        scheduleIngredient(test, crucible, player, 105, Items.STONE, 2);
+        test.runAfterDelay(116, () -> {
             crucible.use(player, stack(Items.BUCKET), true);
             test.assertValueEqual(count(player, Items.WATER_BUCKET), 1, "Draining recovers one water bucket");
             test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.EMPTY, "Draining empties the crucible");
@@ -195,12 +232,22 @@ public class CrucibleGameTest implements FabricGameTest {
             crucible.level().setBlockAndUpdate(crucible.pos(), Alchemy.CRUCIBLE.defaultBlockState());
             crucible.use(player, stack(Items.WATER_BUCKET), false);
         });
-        scheduleIngredient(test, crucible, player, 218, Items.STONE);
-        test.runAfterDelay(222, () -> {
+        scheduleIngredient(test, crucible, player, 222, Items.STONE, 1);
+        test.runAfterDelay(228, () -> {
+            crucible.use(player, ItemStack.EMPTY, true);
+            test.assertValueEqual(crucible.phase(), CrucibleBlock.Phase.EMPTY, "Sneaking with an empty hand dumps the water");
+            test.assertTrue(crucible.entity().snapshot().aspects().isEmpty(), "Empty-hand purge removes every stored unit");
+            test.assertValueEqual(AuraService.read(crucible.level(), chunk).flux(), 3, "Empty-hand purge adds Flux exactly once");
+            crucible.use(player, ItemStack.EMPTY, true);
+            test.assertValueEqual(AuraService.read(crucible.level(), chunk).flux(), 3, "Repeating purge releases nothing");
+        });
+        test.runAfterDelay(234, () -> crucible.use(player, stack(Items.WATER_BUCKET), false));
+        scheduleIngredient(test, crucible, player, 340, Items.STONE, 1);
+        test.runAfterDelay(347, () -> {
             crucible.level().removeBlock(crucible.pos(), false);
-            test.assertValueEqual(AuraService.read(crucible.level(), chunk).flux(), 3, "Breaking vents five residue units as one Flux");
+            test.assertValueEqual(AuraService.read(crucible.level(), chunk).flux(), 4, "Breaking vents five residue units as one Flux");
             crucible.level().removeBlock(crucible.pos(), false);
-            test.assertValueEqual(AuraService.read(crucible.level(), chunk).flux(), 3, "Repeated removal changes no aura");
+            test.assertValueEqual(AuraService.read(crucible.level(), chunk).flux(), 4, "Repeated removal changes no aura");
 
             var center = crucible.pos().getCenter();
             player.moveTo(center.x, center.y, center.z, 0, 0);
@@ -215,13 +262,17 @@ public class CrucibleGameTest implements FabricGameTest {
         });
     }
 
-    private static void scheduleIngredient(GameTestHelper test, Fixture crucible, ServerPlayer player, int tick, Item ingredient) {
-        test.runAfterDelay(tick, () -> expectConsumed(test, crucible.use(player, stack(ingredient), false),
-            "One ingredient is dissolved: " + BuiltInRegistries.ITEM.getKey(ingredient)));
+    private static void scheduleIngredient(GameTestHelper test, Fixture crucible, ServerPlayer player, int tick,
+                                           Item ingredient, int count) {
+        test.runAfterDelay(tick, () -> {
+            var entity = crucible.drop(player, ingredient, count);
+            test.runAfterDelay(4 * count + 1, () -> test.assertFalse(entity.isAlive(),
+                "Ingredient is dissolved: " + BuiltInRegistries.ITEM.getKey(ingredient)));
+        });
     }
 
-    private static void expectConsumed(GameTestHelper test, ItemStack held, String label) {
-        test.assertTrue(held.isEmpty(), label);
+    private static void assertDrop(GameTestHelper test, ItemEntity entity, int count, String label) {
+        test.assertTrue(entity.isAlive() && entity.getItem().getCount() == count, label);
     }
 
     private static void expectHeld(GameTestHelper test, ItemStack held, Item item, int count, String label) {
@@ -297,6 +348,32 @@ public class CrucibleGameTest implements FabricGameTest {
 
         private CrucibleBlock.Phase phase() {
             return level.getBlockState(pos).getValue(CrucibleBlock.PHASE);
+        }
+
+        private ItemEntity drop(ServerPlayer owner, Item ingredient, int count) {
+            var entity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.9, pos.getZ() + 0.5,
+                new ItemStack(ingredient, count), 0, 0, 0);
+            if (owner != null) {
+                entity.setThrower(owner);
+            }
+            center(entity);
+            level.addFreshEntity(entity);
+            return entity;
+        }
+
+        private void center(ItemEntity entity) {
+            entity.setNoGravity(true);
+            entity.setNeverPickUp();
+            entity.setDeltaMovement(0, 0, 0);
+            entity.setPos(pos.getX() + 0.5, pos.getY() + 0.9, pos.getZ() + 0.5);
+        }
+
+        private List<ItemEntity> outputs(Item item) {
+            return level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2), drop -> drop.getItem().is(item));
+        }
+
+        private int outputCount(Item item) {
+            return outputs(item).stream().mapToInt(drop -> drop.getItem().getCount()).sum();
         }
 
         @SuppressWarnings("removal")
