@@ -36,10 +36,7 @@ public final class ResearchJournalItem extends Item {
 	}
 
 	static JournalSnapshotPayload snapshot(ServerPlayer player) {
-		var snapshot = AspectDiscoveryData.get(player).snapshot(player.getUUID(),
-				AspectDiscoveryData.legacyObservations(player), AspectCatalog.current());
-		return new JournalSnapshotPayload(snapshot.observations(), snapshot.unlocked(), snapshot.arcaneFoundationsUnlocked(),
-				snapshot.alchemyFoundationsUnlocked(), snapshot.specimens(), snapshot.discovered(),
-				NodeResearch.progress(player, snapshot.unlocked()));
+		return AspectDiscoveryData.get(player).snapshot(player.getUUID(),
+				AspectDiscoveryData.legacyObservations(player), AspectCatalog.current(), NodeResearch.progress(player));
 	}
 }

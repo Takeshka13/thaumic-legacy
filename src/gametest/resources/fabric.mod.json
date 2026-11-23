@@ -11,7 +11,8 @@
       "dev.thaumiclegacy.workbench.ArcaneWorkbenchGameTest",
       "dev.thaumiclegacy.alchemy.CrucibleGameTest",
       "dev.thaumiclegacy.wand.WandGameTest",
-      "dev.thaumiclegacy.node.AuraNodeGameTest"
+      "dev.thaumiclegacy.node.AuraNodeGameTest",
+      "dev.thaumiclegacy.logistics.EssentiaLogisticsGameTest"
     ]
   },
   "depends": {

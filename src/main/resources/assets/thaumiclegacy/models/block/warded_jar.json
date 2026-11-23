@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "thaumiclegacy:block/warded_jar",
+    "glass": "thaumiclegacy:block/warded_jar",
+    "rim": "thaumiclegacy:block/alchemical_furnace_side"
+  },
+  "elements": [
+    {"from":[3,0,3],"to":[13,1.5,13],"faces":{"north":{"uv":[0,0,16,16],"texture":"#rim"},"south":{"uv":[0,0,16,16],"texture":"#rim"},"east":{"uv":[0,0,16,16],"texture":"#rim"},"west":{"uv":[0,0,16,16],"texture":"#rim"},"up":{"uv":[0,0,16,16],"texture":"#rim"},"down":{"uv":[0,0,16,16],"texture":"#rim"}}},
+    {"from":[3.5,1.5,3.5],"to":[12.5,11.5,12.5],"faces":{"north":{"uv":[0,0,16,16],"texture":"#glass"},"south":{"uv":[0,0,16,16],"texture":"#glass"},"east":{"uv":[0,0,16,16],"texture":"#glass"},"west":{"uv":[0,0,16,16],"texture":"#glass"},"up":{"uv":[0,0,16,16],"texture":"#glass"},"down":{"uv":[0,0,16,16],"texture":"#glass"}}},
+    {"from":[3,11.5,3],"to":[13,13,13],"faces":{"north":{"uv":[0,0,16,16],"texture":"#rim"},"south":{"uv":[0,0,16,16],"texture":"#rim"},"east":{"uv":[0,0,16,16],"texture":"#rim"},"west":{"uv":[0,0,16,16],"texture":"#rim"},"up":{"uv":[0,0,16,16],"texture":"#rim"},"down":{"uv":[0,0,16,16],"texture":"#rim"}}},
+    {"from":[5,13,5],"to":[11,15,11],"faces":{"north":{"uv":[0,0,16,16],"texture":"#rim"},"south":{"uv":[0,0,16,16],"texture":"#rim"},"east":{"uv":[0,0,16,16],"texture":"#rim"},"west":{"uv":[0,0,16,16],"texture":"#rim"},"up":{"uv":[0,0,16,16],"texture":"#rim"},"down":{"uv":[0,0,16,16],"texture":"#rim"}}}
+  ]
+}

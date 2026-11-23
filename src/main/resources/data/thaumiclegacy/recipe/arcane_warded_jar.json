@@ -1,0 +1,25 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " W ",
+    "G G",
+    "GLG"
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:oak_slab"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "L": {
+      "item": "thaumiclegacy:lumen_glass"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:warded_jar",
+    "count": 1
+  },
+  "vis_cost": 10,
+  "research": "thaumiclegacy:essentia_distillation"
+}

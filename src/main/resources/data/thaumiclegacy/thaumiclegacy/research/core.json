@@ -1,0 +1,104 @@
+{
+  "categories": [
+    {
+      "id": "thaumiclegacy:fundamentals",
+      "title": "screen.thaumiclegacy.journal.category.fundamentals",
+      "order": 0
+    },
+    {
+      "id": "thaumiclegacy:exploration",
+      "title": "screen.thaumiclegacy.journal.category.exploration",
+      "order": 1
+    },
+    {
+      "id": "thaumiclegacy:thaumaturgy",
+      "title": "screen.thaumiclegacy.journal.category.thaumaturgy",
+      "order": 2
+    },
+    {
+      "id": "thaumiclegacy:alchemy",
+      "title": "screen.thaumiclegacy.journal.category.alchemy",
+      "order": 3
+    },
+    {
+      "id": "thaumiclegacy:artifice",
+      "title": "screen.thaumiclegacy.journal.category.artifice",
+      "order": 4
+    },
+    {
+      "id": "thaumiclegacy:infusion",
+      "title": "screen.thaumiclegacy.journal.category.infusion",
+      "order": 5
+    },
+    {
+      "id": "thaumiclegacy:golemancy",
+      "title": "screen.thaumiclegacy.journal.category.golemancy",
+      "order": 6
+    },
+    {
+      "id": "thaumiclegacy:ancient_knowledge",
+      "title": "screen.thaumiclegacy.journal.category.ancient_knowledge",
+      "order": 7
+    }
+  ],
+  "entries": [
+    {
+      "id": "thaumiclegacy:comparing_specimens",
+      "category": "thaumiclegacy:fundamentals",
+      "translation": "screen.thaumiclegacy.journal",
+      "gate": "comparing_specimens"
+    },
+    {
+      "id": "thaumiclegacy:node_basics",
+      "category": "thaumiclegacy:exploration",
+      "translation": "screen.thaumiclegacy.journal.node_basics",
+      "gate": "node_basics"
+    },
+    {
+      "id": "thaumiclegacy:node_study",
+      "category": "thaumiclegacy:exploration",
+      "translation": "screen.thaumiclegacy.journal.node_study",
+      "gate": "node_study",
+      "parents": [
+        "thaumiclegacy:node_basics"
+      ]
+    },
+    {
+      "id": "thaumiclegacy:wand_charging",
+      "category": "thaumiclegacy:thaumaturgy",
+      "translation": "screen.thaumiclegacy.journal.wand_charging",
+      "gate": "wand_charging",
+      "parents": [
+        "thaumiclegacy:node_study"
+      ],
+      "hidden": true
+    },
+    {
+      "id": "thaumiclegacy:arcane_foundations",
+      "category": "thaumiclegacy:artifice",
+      "translation": "screen.thaumiclegacy.journal.arcane",
+      "gate": "arcane_foundations",
+      "parents": [
+        "thaumiclegacy:comparing_specimens"
+      ]
+    },
+    {
+      "id": "thaumiclegacy:alchemy_foundations",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.alchemy",
+      "gate": "alchemy_foundations",
+      "parents": [
+        "thaumiclegacy:arcane_foundations"
+      ]
+    },
+    {
+      "id": "thaumiclegacy:essentia_distillation",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.essentia_distillation",
+      "gate": "lumen_brew",
+      "parents": [
+        "thaumiclegacy:alchemy_foundations"
+      ]
+    }
+  ]
+}

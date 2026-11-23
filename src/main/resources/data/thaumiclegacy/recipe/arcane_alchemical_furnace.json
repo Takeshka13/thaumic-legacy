@@ -1,0 +1,25 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " R ",
+    "RFR",
+    " B "
+  ],
+  "key": {
+    "R": {
+      "item": "thaumiclegacy:resonant_copper"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    },
+    "B": {
+      "item": "minecraft:bricks"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:alchemical_furnace",
+    "count": 1
+  },
+  "vis_cost": 18,
+  "research": "thaumiclegacy:essentia_distillation"
+}

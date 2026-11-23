@@ -7,12 +7,14 @@ import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.aura.ThaumometerItem;
 import dev.thaumiclegacy.item.AuraSurveyorItem;
 import dev.thaumiclegacy.item.CleansingSaltItem;
+import dev.thaumiclegacy.logistics.EssentiaLogistics;
 import dev.thaumiclegacy.node.AuraNodes;
 import dev.thaumiclegacy.revealing.GogglesItem;
 import dev.thaumiclegacy.revealing.RevealingSight;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ResearchJournalItem;
+import dev.thaumiclegacy.research.ResearchProgress;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
 import dev.thaumiclegacy.wand.WandItem;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
@@ -66,6 +68,8 @@ public class ThaumicLegacy implements ModInitializer {
 		FuelRegistry.INSTANCE.add(emberSalt, 4_800);
 		ArcaneWorkbench.register();
 		Alchemy.register();
+		EssentiaLogistics.register();
+		ResearchProgress.register();
 		AuraNodes.register();
 		RevealingSight.register(goggles);
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {

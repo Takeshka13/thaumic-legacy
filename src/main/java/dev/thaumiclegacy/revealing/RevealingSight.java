@@ -4,6 +4,8 @@ import dev.thaumiclegacy.alchemy.Alchemy;
 import dev.thaumiclegacy.alchemy.CrucibleBlockEntity;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.ThaumometerItem;
+import dev.thaumiclegacy.logistics.EssentiaFurnaceBlockEntity;
+import dev.thaumiclegacy.logistics.EssentiaStorageBlockEntity;
 import dev.thaumiclegacy.node.AuraNodeBlock;
 import dev.thaumiclegacy.node.AuraNodeBlockEntity;
 import dev.thaumiclegacy.node.AuraNodes;
@@ -20,6 +22,7 @@ import net.minecraft.world.phys.HitResult;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +38,7 @@ public final class RevealingSight {
 	public static void register(Item goggles) {
 		PayloadTypeRegistry.playS2C().register(RevealingPayload.TYPE, RevealingPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(NodeSightPayload.TYPE, NodeSightPayload.STREAM_CODEC);
+		PayloadTypeRegistry.playS2C().register(LogisticsReadoutPayload.TYPE, LogisticsReadoutPayload.STREAM_CODEC);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (server.getTickCount() % UPDATE_INTERVAL == 0) {
 				for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -75,6 +79,35 @@ public final class RevealingSight {
 		return Optional.of(snapshot.id());
 	}
 
+	public static boolean measureLogistics(ServerPlayer player, BlockPos pos) {
+		return revealLogistics(player, pos, false);
+	}
+
+	private static boolean revealLogistics(ServerPlayer player, BlockPos pos, boolean worn) {
+		var level = player.serverLevel();
+		if (!level.hasChunkAt(pos)) {
+			return false;
+		}
+		var entity = level.getBlockEntity(pos);
+		if (!(entity instanceof EssentiaStorageBlockEntity) && !(entity instanceof EssentiaFurnaceBlockEntity)) {
+			return false;
+		}
+		if (ServerPlayNetworking.canSend(player, LogisticsReadoutPayload.TYPE)) {
+			LogisticsReadoutPayload reading;
+			if (entity instanceof EssentiaStorageBlockEntity storage) {
+				var view = storage.snapshot();
+				reading = new LogisticsReadoutPayload(pos, worn, "storage", view.amount(), view.capacity(),
+						aspectAmounts(view.aspects()), 0, 0, 0);
+			} else {
+				var view = ((EssentiaFurnaceBlockEntity) entity).snapshot();
+				reading = new LogisticsReadoutPayload(pos, worn, view.state().name().toLowerCase(Locale.ROOT),
+						0, 0, List.of(), view.progress(), view.duration(), view.burnTicks());
+			}
+			ServerPlayNetworking.send(player, reading);
+		}
+		return true;
+	}
+
 	private static void revealFocus(ServerPlayer player, boolean worn) {
 		boolean readNodes = ServerPlayNetworking.canSend(player, NodeSightPayload.TYPE);
 		boolean revealBlocks = worn && ServerPlayNetworking.canSend(player, RevealingPayload.TYPE);
@@ -102,6 +135,9 @@ public final class RevealingSight {
 			return;
 		}
 		var pos = focus.orElseThrow();
+		if (revealLogistics(player, pos, true)) {
+			return;
+		}
 		var state = level.getBlockState(pos);
 		int light = state.getLightEmission();
 		boolean heat = Alchemy.providesHeat(state);
@@ -137,8 +173,13 @@ public final class RevealingSight {
 
 	private static RevealingPayload.CrucibleContents contents(CrucibleBlockEntity crucible) {
 		var snapshot = crucible.snapshot();
+		return new RevealingPayload.CrucibleContents(snapshot.phase().getSerializedName(), snapshot.amount(), snapshot.capacity(),
+				aspectAmounts(snapshot.aspects()));
+	}
+
+	private static List<RevealingPayload.AspectAmount> aspectAmounts(Map<String, Integer> aspects) {
 		var definitions = AspectCatalog.current().definitions();
-		var entries = snapshot.aspects().entrySet().stream()
+		return aspects.entrySet().stream()
 			.sorted(Map.Entry.comparingByKey())
 			.limit(RevealingPayload.MAX_ASPECTS)
 			.map(entry -> {
@@ -147,6 +188,5 @@ public final class RevealingSight {
 					? new RevealingPayload.AspectAmount(entry.getKey(), entry.getValue(), 0xA29179, -1)
 					: new RevealingPayload.AspectAmount(entry.getKey(), entry.getValue(), aspect.color(), aspect.glyph());
 			}).toList();
-		return new RevealingPayload.CrucibleContents(snapshot.phase().getSerializedName(), snapshot.amount(), snapshot.capacity(), entries);
 	}
 }

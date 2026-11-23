@@ -1,23 +1,30 @@
 package dev.thaumiclegacy.client;
 
+import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.AspectView;
+import dev.thaumiclegacy.research.JournalSnapshotPayload.CategoryView;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.SpecimenView;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractScrollWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.Item;
@@ -30,17 +37,22 @@ final class ResearchJournalScreen extends Screen {
 	private static final int ACCENT = 0xFF744039;
 	private static final int MUTED_INK = 0xFF624E48;
 	private static final String KEY = "screen.thaumiclegacy.journal.";
+	private static final ResourceLocation NODE_STUDY = ThaumicLegacy.id("node_study");
+	private static final int CATEGORIES_PER_PAGE = 8;
 
 	private final JournalSnapshotPayload journal;
 	private int left;
 	private int top;
 	private int panelWidth;
 	private int panelHeight;
-	private boolean showCatalog;
-	private JournalPage observationsPage;
-	private JournalPage catalogPage;
-	private Button observationsTab;
-	private Button catalogTab;
+	private Tab tab = Tab.RESEARCH;
+	private int categoryIndex;
+	private final Map<Tab, Button> tabs = new EnumMap<>(Tab.class);
+	private final List<Button> categoryButtons = new ArrayList<>();
+	private Button previousCategories;
+	private Button nextCategories;
+	private JournalPage page;
+	private int researchTop;
 
 	ResearchJournalScreen(JournalSnapshotPayload journal) {
 		super(Component.translatable("item.thaumiclegacy.research_journal"));
@@ -53,16 +65,47 @@ final class ResearchJournalScreen extends Screen {
 		panelHeight = Math.min(270, height - 8);
 		left = (width - panelWidth) / 2;
 		top = (height - panelHeight) / 2;
-		int tabWidth = (panelWidth - 20) / 2;
-		observationsTab = addRenderableWidget(Button.builder(Component.translatable(KEY + "tab.observations"),
-			button -> selectPage(false)).bounds(left + 8, top + 8, tabWidth, 20).build());
-		catalogTab = addRenderableWidget(Button.builder(Component.translatable(KEY + "tab.aspects"),
-			button -> selectPage(true)).bounds(left + 12 + tabWidth, top + 8, tabWidth, 20).build());
-		observationsPage = addRenderableWidget(new JournalPage(left + 8, top + 34, panelWidth - 24,
-			panelHeight - 70, font, observationParagraphs()));
-		catalogPage = addRenderableWidget(new JournalPage(left + 8, top + 34, panelWidth - 24,
-			panelHeight - 70, font, aspectParagraphs()));
-		selectPage(showCatalog);
+		tabs.clear();
+		categoryButtons.clear();
+		page = null;
+		previousCategories = null;
+		nextCategories = null;
+		int tabWidth = (panelWidth - 24) / Tab.values().length;
+		for (Tab choice : Tab.values()) {
+			Component label = Component.translatable(KEY + "tab." + choice.name().toLowerCase(Locale.ROOT));
+			int tabX = left + 8 + choice.ordinal() * (tabWidth + 4);
+			tabs.put(choice, addRenderableWidget(Button.builder(label, button -> selectTab(choice))
+				.bounds(tabX, top + 8, tabWidth, 20).build()));
+		}
+		var categories = journal.research().categories();
+		int columns = panelWidth >= 290 ? 4 : 3;
+		int categoryWidth = (panelWidth - 16 - (columns - 1) * 4) / columns;
+		for (int index = 0; index < categories.size(); index++) {
+			int selection = index;
+			int position = index % CATEGORIES_PER_PAGE;
+			var category = categories.get(index);
+			Component fullTitle = categoryTitle(category);
+			Component buttonTitle = Component.translatableWithFallback(category.title() + ".short", fullTitle.getString());
+			Component label = font.width(buttonTitle) <= categoryWidth - 8 ? buttonTitle
+				: Component.literal(font.plainSubstrByWidth(buttonTitle.getString(), categoryWidth - 8 - font.width("…")) + "…");
+			int x = left + 8 + position % columns * (categoryWidth + 4);
+			int y = top + 33 + position / columns * 20;
+			categoryButtons.add(addRenderableWidget(Button.builder(label, button -> {
+				categoryIndex = selection;
+				selectTab(Tab.RESEARCH);
+			}).bounds(x, y, categoryWidth, 17).tooltip(Tooltip.create(fullTitle)).build()));
+		}
+		researchTop = 34 + Math.ceilDiv(Math.min(CATEGORIES_PER_PAGE, categories.size()), columns) * 20;
+		if (categories.size() > CATEGORIES_PER_PAGE) {
+			previousCategories = addRenderableWidget(Button.builder(Component.literal("‹"), button -> changeCategoryPage(-1))
+				.bounds(left + 8, top + researchTop, 20, 17)
+				.tooltip(Tooltip.create(Component.translatable(KEY + "research.previous_categories"))).build());
+			nextCategories = addRenderableWidget(Button.builder(Component.literal("›"), button -> changeCategoryPage(1))
+				.bounds(left + 32, top + researchTop, 20, 17)
+				.tooltip(Tooltip.create(Component.translatable(KEY + "research.next_categories"))).build());
+			researchTop += 20;
+		}
+		selectTab(tab);
 		int buttonWidth = Math.min(120, panelWidth - 16);
 		addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
 			.bounds((width - buttonWidth) / 2, top + panelHeight - 28, buttonWidth, 20)
@@ -82,32 +125,90 @@ final class ResearchJournalScreen extends Screen {
 		return false;
 	}
 
-	private void selectPage(boolean catalog) {
-		showCatalog = catalog;
-		observationsTab.active = catalog;
-		catalogTab.active = !catalog;
-		observationsPage.visible = !catalog;
-		observationsPage.active = !catalog;
-		catalogPage.visible = catalog;
-		catalogPage.active = catalog;
+	private void selectTab(Tab choice) {
+		tab = choice;
+		tabs.forEach((section, button) -> button.active = section != choice);
+		int categoryPage = categoryIndex / CATEGORIES_PER_PAGE;
+		for (int index = 0; index < categoryButtons.size(); index++) {
+			var button = categoryButtons.get(index);
+			button.visible = choice == Tab.RESEARCH && index / CATEGORIES_PER_PAGE == categoryPage;
+			button.active = button.visible && index != categoryIndex;
+		}
+		if (previousCategories != null && nextCategories != null) {
+			previousCategories.visible = choice == Tab.RESEARCH;
+			previousCategories.active = previousCategories.visible && categoryPage > 0;
+			nextCategories.visible = choice == Tab.RESEARCH;
+			nextCategories.active = nextCategories.visible && (categoryPage + 1) * CATEGORIES_PER_PAGE < categoryButtons.size();
+		}
+		if (page != null) {
+			removeWidget(page);
+		}
+		int offset = choice == Tab.RESEARCH ? researchTop : 34;
+		var paragraphs = switch (choice) {
+			case RESEARCH -> researchParagraphs();
+			case OBSERVATIONS -> observationParagraphs();
+			case ASPECTS -> aspectParagraphs();
+		};
+		page = addRenderableWidget(new JournalPage(left + 8, top + offset, panelWidth - 24,
+			Math.max(36, panelHeight - offset - 36), font, paragraphs));
+	}
+
+	private void changeCategoryPage(int direction) {
+		categoryIndex = (categoryIndex / CATEGORIES_PER_PAGE + direction) * CATEGORIES_PER_PAGE;
+		selectTab(Tab.RESEARCH);
+	}
+
+	private List<Paragraph> researchParagraphs() {
+		List<Paragraph> paragraphs = new ArrayList<>();
+		var categories = journal.research().categories();
+		if (categories.isEmpty()) {
+			paragraphs.add(new Paragraph(Component.translatable(KEY + "research.empty"), INK, 0));
+			return paragraphs;
+		}
+		var category = categories.get(categoryIndex);
+		paragraphs.add(new Paragraph(categoryTitle(category), ACCENT, 8));
+		if (category.entries().isEmpty()) {
+			paragraphs.add(new Paragraph(Component.translatable(KEY + "research.empty"), INK, 0));
+			return paragraphs;
+		}
+		Map<ResourceLocation, Component> titles = new HashMap<>();
+		for (var group : categories) {
+			for (var entry : group.entries()) {
+				titles.put(entry.id(), Component.translatableWithFallback(entry.title(), entry.id().getPath()));
+			}
+		}
+		for (var entry : category.entries()) {
+			String status = entry.unlocked() ? "unlocked" : "locked";
+			Component title = Component.translatable(KEY + "research." + status, titles.get(entry.id()));
+			paragraphs.add(new Paragraph(title, entry.unlocked() ? ACCENT : MUTED_INK, 3));
+			if (!entry.body().isEmpty()) {
+				Component body = entry.unlocked() && entry.id().equals(NODE_STUDY)
+					? Component.translatable(entry.body(), journal.nodeProgress().observed())
+					: Component.translatable(entry.body());
+				paragraphs.add(new Paragraph(body, INK, 4));
+			}
+			if (!entry.parents().isEmpty()) {
+				MutableComponent parents = Component.empty();
+				for (ResourceLocation parent : entry.parents()) {
+					if (!parents.getSiblings().isEmpty()) {
+						parents.append(Component.translatable(KEY + "research.separator"));
+					}
+					parents.append(titles.getOrDefault(parent, Component.literal(parent.getPath())));
+				}
+				paragraphs.add(new Paragraph(Component.translatable(KEY + "research.parents", parents), MUTED_INK, 4));
+			}
+			paragraphs.add(new Paragraph(Component.empty(), INK, 4));
+		}
+		return paragraphs;
+	}
+
+	private static Component categoryTitle(CategoryView category) {
+		return Component.translatableWithFallback(category.title(), category.id().getPath());
 	}
 
 	private List<Paragraph> observationParagraphs() {
 		List<Paragraph> paragraphs = new ArrayList<>();
 		paragraphs.add(new Paragraph(getTitle(), ACCENT, 8));
-		String state = journal.unlocked() ? "unlocked" : "locked";
-		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".title"), ACCENT, 3));
-		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".body"), INK, 8));
-		String arcaneState = journal.arcaneFoundationsUnlocked() ? "unlocked" : "locked";
-		paragraphs.add(new Paragraph(Component.translatable(KEY + "arcane." + arcaneState + ".title"), ACCENT, 3));
-		paragraphs.add(new Paragraph(Component.translatable(KEY + "arcane." + arcaneState + ".body"), INK, 8));
-		String alchemyState = journal.alchemyFoundationsUnlocked() ? "unlocked" : "locked";
-		paragraphs.add(new Paragraph(Component.translatable(KEY + "alchemy." + alchemyState + ".title"), ACCENT, 3));
-		paragraphs.add(new Paragraph(Component.translatable(KEY + "alchemy." + alchemyState + ".body"), INK, 8));
-		var nodeProgress = journal.nodeProgress();
-		addNodeResearch(paragraphs, "node_basics", nodeProgress.basics());
-		addNodeResearch(paragraphs, "node_study", nodeProgress.observed() > 0, nodeProgress.observed());
-		addNodeResearch(paragraphs, "wand_charging", nodeProgress.charged());
 
 		Set<ResourceLocation> detailedBlocks = new HashSet<>();
 		for (SpecimenView specimen : journal.specimens()) {
@@ -131,12 +232,6 @@ final class ResearchJournalScreen extends Screen {
 		}
 
 		return paragraphs;
-	}
-
-	private static void addNodeResearch(List<Paragraph> paragraphs, String id, boolean completed, Object... detail) {
-		String key = KEY + id + (completed ? ".unlocked." : ".locked.");
-		paragraphs.add(new Paragraph(Component.translatable(key + "title"), ACCENT, 3));
-		paragraphs.add(new Paragraph(Component.translatable(key + "body", detail), INK, 8));
 	}
 
 	private List<Paragraph> aspectParagraphs() {
@@ -206,6 +301,10 @@ final class ResearchJournalScreen extends Screen {
 		Paragraph(Component text, int color, int spacing) {
 			this(text, color, spacing, null);
 		}
+	}
+
+	private enum Tab {
+		RESEARCH, OBSERVATIONS, ASPECTS
 	}
 
 	private static final class JournalPage extends AbstractScrollWidget {

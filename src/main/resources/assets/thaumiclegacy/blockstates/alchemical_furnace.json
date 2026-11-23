@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "thaumiclegacy:block/alchemical_furnace"
+    },
+    "lit=true": {
+      "model": "thaumiclegacy:block/alchemical_furnace_lit"
+    }
+  }
+}

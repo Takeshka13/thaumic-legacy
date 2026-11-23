@@ -1,0 +1,6 @@
+{
+  "parent": "thaumiclegacy:block/alchemical_furnace",
+  "textures": {
+    "front": "thaumiclegacy:block/alchemical_furnace_front_lit"
+  }
+}

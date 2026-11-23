@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "thaumiclegacy:block/alchemical_furnace_front",
+    "side": "thaumiclegacy:block/alchemical_furnace_side",
+    "top": "thaumiclegacy:block/alchemical_furnace_side"
+  }
+}

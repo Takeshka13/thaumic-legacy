@@ -4,6 +4,7 @@ import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.revealing.LogisticsReadoutPayload;
 import dev.thaumiclegacy.revealing.NodeSightPayload;
 import dev.thaumiclegacy.revealing.RevealingPayload;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
@@ -36,17 +37,22 @@ public class ThaumicLegacyClient implements ClientModInitializer {
 		NodeSightOverlay nodeSight = new NodeSightOverlay();
 		ClientPlayNetworking.registerGlobalReceiver(NodeSightPayload.TYPE, (payload, context) ->
 			nodeSight.show(context.client(), payload));
+		LogisticsOverlay logistics = new LogisticsOverlay();
+		ClientPlayNetworking.registerGlobalReceiver(LogisticsReadoutPayload.TYPE, (payload, context) ->
+			logistics.show(context.client(), payload));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			scanFeedback.clear();
 			auraReading.clear();
 			revealing.clear();
 			nodeSight.clear();
+			logistics.clear();
 		});
 		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> {
 			scanFeedback.render(graphics);
 			auraReading.render(graphics);
 			revealing.render(graphics);
 			nodeSight.render(graphics);
+			logistics.render(graphics);
 		});
 	}
 }

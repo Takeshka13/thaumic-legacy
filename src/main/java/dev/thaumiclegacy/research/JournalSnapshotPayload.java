@@ -12,20 +12,20 @@ import java.util.List;
 
 public record JournalSnapshotPayload(List<ResourceLocation> observations, boolean unlocked, boolean arcaneFoundationsUnlocked,
 		boolean alchemyFoundationsUnlocked, List<SpecimenView> specimens, List<AspectView> discovered,
-		NodeProgress nodeProgress) implements CustomPacketPayload {
+		NodeProgress nodeProgress, ResearchView research) implements CustomPacketPayload {
 	static final int MAX_SPECIMENS = 256;
 	static final int MAX_DISCOVERED = 256;
 	static final int MAX_LEGACY = 3;
-	public static final Type<JournalSnapshotPayload> TYPE = new Type<>(ThaumicLegacy.id("aspect_journal_details_v4"));
+	public static final Type<JournalSnapshotPayload> TYPE = new Type<>(ThaumicLegacy.id("aspect_journal_details_v5"));
 	public static final StreamCodec<RegistryFriendlyByteBuf, JournalSnapshotPayload> STREAM_CODEC = StreamCodec.composite(
 			ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_LEGACY)), JournalSnapshotPayload::observations,
 			ResearchFlags.STREAM_CODEC, journal -> new ResearchFlags(journal.unlocked, journal.arcaneFoundationsUnlocked,
 					journal.alchemyFoundationsUnlocked),
 			SpecimenView.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_SPECIMENS)), JournalSnapshotPayload::specimens,
 			AspectView.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_DISCOVERED)), JournalSnapshotPayload::discovered,
-			NodeProgress.STREAM_CODEC, JournalSnapshotPayload::nodeProgress,
-			(observations, flags, specimens, discovered, nodes) -> new JournalSnapshotPayload(observations,
-					flags.unlocked(), flags.arcane(), flags.alchemy(), specimens, discovered, nodes));
+			ProgressViews.STREAM_CODEC, journal -> new ProgressViews(journal.nodeProgress, journal.research),
+			(observations, flags, specimens, discovered, progress) -> new JournalSnapshotPayload(observations,
+					flags.unlocked(), flags.arcane(), flags.alchemy(), specimens, discovered, progress.nodes, progress.research));
 
 	public JournalSnapshotPayload {
 		observations = List.copyOf(observations);
@@ -49,6 +49,36 @@ public record JournalSnapshotPayload(List<ResourceLocation> observations, boolea
 				ByteBufCodecs.BOOL, NodeProgress::basics,
 				ByteBufCodecs.VAR_INT, NodeProgress::observed,
 				ByteBufCodecs.BOOL, NodeProgress::charged, NodeProgress::new);
+	}
+
+	private record ProgressViews(NodeProgress nodes, ResearchView research) {
+		private static final StreamCodec<RegistryFriendlyByteBuf, ProgressViews> STREAM_CODEC = StreamCodec.composite(
+				NodeProgress.STREAM_CODEC, ProgressViews::nodes,
+				ResearchView.STREAM_CODEC, ProgressViews::research, ProgressViews::new);
+	}
+
+	public record ResearchView(List<CategoryView> categories) {
+		private static final StreamCodec<RegistryFriendlyByteBuf, ResearchView> STREAM_CODEC = StreamCodec.composite(
+				CategoryView.STREAM_CODEC.apply(ByteBufCodecs.list(32)), ResearchView::categories, ResearchView::new);
+		public ResearchView { categories = List.copyOf(categories); }
+	}
+
+	public record CategoryView(ResourceLocation id, String title, List<EntryView> entries) {
+		private static final StreamCodec<RegistryFriendlyByteBuf, CategoryView> STREAM_CODEC = StreamCodec.composite(
+				ResourceLocation.STREAM_CODEC, CategoryView::id,
+				ByteBufCodecs.stringUtf8(160), CategoryView::title,
+				EntryView.STREAM_CODEC.apply(ByteBufCodecs.list(256)), CategoryView::entries, CategoryView::new);
+		public CategoryView { entries = List.copyOf(entries); }
+	}
+
+	public record EntryView(ResourceLocation id, String title, String body, boolean unlocked, List<ResourceLocation> parents) {
+		private static final StreamCodec<RegistryFriendlyByteBuf, EntryView> STREAM_CODEC = StreamCodec.composite(
+				ResourceLocation.STREAM_CODEC, EntryView::id,
+				ByteBufCodecs.stringUtf8(160), EntryView::title,
+				ByteBufCodecs.stringUtf8(160), EntryView::body,
+				ByteBufCodecs.BOOL, EntryView::unlocked,
+				ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list(16)), EntryView::parents, EntryView::new);
+		public EntryView { parents = List.copyOf(parents); }
 	}
 
 	public record SpecimenView(ResourceLocation id, String kind, List<AspectView> aspects) {

@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -359,7 +360,32 @@ public class FieldObservationGameTest implements FabricGameTest {
         test.assertValueEqual(importedFromDisk, migrated, "Legacy disk data produces the same migrated journal");
         test.assertValueEqual(ResearchJournalItem.snapshot(player), migrated, "Legacy import is idempotent");
         test.assertValueEqual(legacy.getObservations(player.getUUID()), expected, "Import preserves legacy observations");
+
+        var catalogView = migrated.research();
+        test.assertValueEqual(catalogView.categories().stream().map(category -> category.id().getPath()).toList(),
+            List.of("fundamentals", "exploration", "thaumaturgy", "alchemy", "artifice", "infusion", "golemancy",
+                "ancient_knowledge"), "Journal uses the loaded category order for a legacy player");
+        test.assertTrue(journalEntry(migrated, "comparing_specimens").orElseThrow().unlocked(),
+            "Legacy observations keep their data-driven journal entry unlocked");
+        test.assertTrue(journalEntry(migrated, "wand_charging").isEmpty(),
+            "A future entry is hidden until its parent is completed");
+        test.assertFalse(ResearchCatalog.current().unlocks("lumen_brew"::equals).contains(ResearchProgress.ESSENTIA_DISTILLATION),
+            "A distillation trigger without the prerequisite chain cannot unlock the entry");
+
+        NodeResearch.observe(player, UUID.randomUUID());
+        var afterNode = journalEntry(ResearchJournalItem.snapshot(player), "wand_charging").orElseThrow();
+        test.assertFalse(afterNode.unlocked(), "Observed node reveals the entry while the charge trigger remains locked");
+        test.assertValueEqual(afterNode.parents(), List.of(ThaumicLegacy.id("node_study")), "Journal shows the known prerequisite");
+        NodeResearch.recordCharge(player);
+        test.assertTrue(journalEntry(ResearchJournalItem.snapshot(player), "wand_charging").orElseThrow().unlocked(),
+            "Completing the trigger unlocks the visible entry");
         test.succeed();
+    }
+
+    private static Optional<JournalSnapshotPayload.EntryView> journalEntry(JournalSnapshotPayload snapshot, String path) {
+        var id = ThaumicLegacy.id(path);
+        return snapshot.research().categories().stream().flatMap(category -> category.entries().stream())
+            .filter(entry -> entry.id().equals(id)).findFirst();
     }
 
     @GameTest(template = EMPTY_STRUCTURE)

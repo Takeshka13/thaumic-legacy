@@ -168,6 +168,11 @@ final class AspectDiscoveryData extends SavedData {
 	}
 
 	JournalSnapshotPayload snapshot(UUID player, List<ResourceLocation> legacy, AspectCatalog catalog) {
+		return snapshot(player, legacy, catalog, new JournalSnapshotPayload.NodeProgress(firstResearchUnlocked(player, legacy), 0, false));
+	}
+
+	JournalSnapshotPayload snapshot(UUID player, List<ResourceLocation> legacy, AspectCatalog catalog,
+			JournalSnapshotPayload.NodeProgress nodes) {
 		importLegacy(player, legacy, catalog);
 		Progress progress = players.get(player);
 		List<SpecimenView> specimens = new ArrayList<>();
@@ -188,9 +193,23 @@ final class AspectDiscoveryData extends SavedData {
 					.map(id -> view(catalog, id, 0, progress.known)).forEach(discovered::add);
 		}
 		boolean firstResearch = firstResearchUnlocked(player, legacy);
+		boolean arcane = arcaneFoundationsUnlocked(player, legacy);
+		boolean alchemy = alchemyFoundationsUnlocked(player, legacy);
+		var evidence = new ResearchProgress.Evidence(firstResearch, arcane, alchemy, nodes, hasLumenBrew(player));
 		return new JournalSnapshotPayload(legacy.stream().limit(JournalSnapshotPayload.MAX_LEGACY).toList(),
-				firstResearch, arcaneFoundationsUnlocked(player, legacy), alchemyFoundationsUnlocked(player, legacy),
-				specimens, discovered, new JournalSnapshotPayload.NodeProgress(firstResearch, 0, false));
+				firstResearch, arcane, alchemy, specimens, discovered, nodes, ResearchCatalog.current().view(evidence::satisfies));
+	}
+
+	boolean hasLumenBrew(UUID player) {
+		var progress = players.get(player);
+		return progress != null && progress.lumenBrew;
+	}
+
+	void recordLumenBrew(UUID player) {
+		if (unreadableData == null && !hasLumenBrew(player)) {
+			players.computeIfAbsent(player, ignored -> new Progress()).lumenBrew = true;
+			setDirty();
+		}
 	}
 
 	private static AspectView view(AspectCatalog catalog, String id, int amount, Set<String> disclosed) {
@@ -226,6 +245,7 @@ final class AspectDiscoveryData extends SavedData {
 			}
 			readIds(entry, "known", progress.known);
 			readIds(entry, ARCHIVE_TAG, progress.archivedKnown);
+			progress.lumenBrew = entry.getBoolean("lumen_brew");
 		}
 		return data;
 	}
@@ -262,6 +282,9 @@ final class AspectDiscoveryData extends SavedData {
 			}
 			entry.put("specimens", specimens);
 			entry.put("known", writeIds(progress.known));
+			if (progress.lumenBrew) {
+				entry.putBoolean("lumen_brew", true);
+			}
 			if (!progress.archivedKnown.isEmpty()) {
 				entry.put(ARCHIVE_TAG, writeIds(progress.archivedKnown));
 			}
@@ -284,5 +307,6 @@ final class AspectDiscoveryData extends SavedData {
 		private final Set<Specimen> specimens = new LinkedHashSet<>();
 		private final Set<String> known = new LinkedHashSet<>();
 		private final Set<String> archivedKnown = new LinkedHashSet<>();
+		private boolean lumenBrew;
 	}
 }

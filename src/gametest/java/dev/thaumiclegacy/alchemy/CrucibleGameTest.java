@@ -134,6 +134,8 @@ public class CrucibleGameTest implements FabricGameTest {
         var owner = crucible.newPlayer(test);
         var outsider = crucible.newPlayer(test);
         learnAlchemy(test, owner);
+        test.assertFalse(ResearchProgress.isUnlocked(owner, ResearchProgress.ESSENTIA_DISTILLATION),
+            "Alchemy alone does not demonstrate distillation prerequisites");
         test.assertFalse(ResearchProgress.isUnlocked(outsider, ResearchProgress.ALCHEMY_FOUNDATIONS),
             "Research belongs to the player who dropped the catalyst");
         crucible.heat(Blocks.MAGMA_BLOCK.defaultBlockState());
@@ -170,6 +172,8 @@ public class CrucibleGameTest implements FabricGameTest {
                 var outputs = crucible.outputs(item("ember_salt"));
                 test.assertValueEqual(outputs.size(), 1, "A stacked catalyst creates one world drop with only one recipe's stock");
                 test.assertValueEqual(outputs.getFirst().getItem().getCount(), 1, "Ember Salt recipe drops exactly one product");
+                test.assertFalse(ResearchProgress.isUnlocked(owner, ResearchProgress.ESSENTIA_DISTILLATION),
+                    "An unrelated successful brew does not open distillation");
                 test.assertTrue(outputs.getFirst().getTags().contains("thaumiclegacy.alchemy_output"), "Ejected product has a reingestion marker");
                 test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("potentia"), 4, id("perditio"), 2),
                     "The second redstone adds its profile without replaying the craft");
@@ -192,6 +196,10 @@ public class CrucibleGameTest implements FabricGameTest {
             test.runAfterDelay(5, () -> {
                 test.assertFalse(glass.isAlive(), "Lumen Glass consumes one glass catalyst");
                 test.assertValueEqual(crucible.outputCount(item("lumen_glass")), 2, "Lumen Glass ejects two blocks");
+                test.assertTrue(ResearchProgress.isUnlocked(owner, ResearchProgress.ESSENTIA_DISTILLATION),
+                    "First successful Lumen Glass brew opens distillation");
+                test.assertFalse(ResearchProgress.isUnlocked(outsider, ResearchProgress.ESSENTIA_DISTILLATION),
+                    "A nearby player does not gain distillation progress from someone else's brew");
                 test.assertValueEqual(crucible.entity().snapshot().aspects(), Map.of(id("ignis"), 2, id("vacuos"), 1,
                     id("potentia"), 4, id("perditio"), 2), "Only the required aspects are removed");
             });

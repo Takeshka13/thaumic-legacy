@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "thaumiclegacy:block/alchemical_furnace_side",
+    "metal": "thaumiclegacy:block/arcane_alembic",
+    "rim": "thaumiclegacy:block/alchemical_furnace_side"
+  },
+  "elements": [
+    {"from":[3,0,3],"to":[13,2,13],"faces":{"north":{"uv":[0,0,16,16],"texture":"#rim"},"south":{"uv":[0,0,16,16],"texture":"#rim"},"east":{"uv":[0,0,16,16],"texture":"#rim"},"west":{"uv":[0,0,16,16],"texture":"#rim"},"up":{"uv":[0,0,16,16],"texture":"#rim"},"down":{"uv":[0,0,16,16],"texture":"#rim"}}},
+    {"from":[4,2,4],"to":[12,9,12],"faces":{"north":{"uv":[0,0,16,16],"texture":"#metal"},"south":{"uv":[0,0,16,16],"texture":"#metal"},"east":{"uv":[0,0,16,16],"texture":"#metal"},"west":{"uv":[0,0,16,16],"texture":"#metal"},"up":{"uv":[0,0,16,16],"texture":"#metal"},"down":{"uv":[0,0,16,16],"texture":"#metal"}}},
+    {"from":[3,9,3],"to":[13,10.5,13],"faces":{"north":{"uv":[0,0,16,16],"texture":"#rim"},"south":{"uv":[0,0,16,16],"texture":"#rim"},"east":{"uv":[0,0,16,16],"texture":"#rim"},"west":{"uv":[0,0,16,16],"texture":"#rim"},"up":{"uv":[0,0,16,16],"texture":"#rim"},"down":{"uv":[0,0,16,16],"texture":"#rim"}}},
+    {"from":[6,10.5,6],"to":[10,12,10],"faces":{"north":{"uv":[0,0,16,16],"texture":"#metal"},"south":{"uv":[0,0,16,16],"texture":"#metal"},"east":{"uv":[0,0,16,16],"texture":"#metal"},"west":{"uv":[0,0,16,16],"texture":"#metal"},"up":{"uv":[0,0,16,16],"texture":"#metal"},"down":{"uv":[0,0,16,16],"texture":"#metal"}}},
+    {"from":[10,8,7],"to":[13,10,9],"faces":{"north":{"uv":[0,0,16,16],"texture":"#metal"},"south":{"uv":[0,0,16,16],"texture":"#metal"},"east":{"uv":[0,0,16,16],"texture":"#metal"},"west":{"uv":[0,0,16,16],"texture":"#metal"},"up":{"uv":[0,0,16,16],"texture":"#metal"},"down":{"uv":[0,0,16,16],"texture":"#metal"}}},
+    {"from":[13,7,7],"to":[15,10,9],"faces":{"north":{"uv":[0,0,16,16],"texture":"#metal"},"south":{"uv":[0,0,16,16],"texture":"#metal"},"east":{"uv":[0,0,16,16],"texture":"#metal"},"west":{"uv":[0,0,16,16],"texture":"#metal"},"up":{"uv":[0,0,16,16],"texture":"#metal"},"down":{"uv":[0,0,16,16],"texture":"#metal"}}}
+  ]
+}

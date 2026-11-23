@@ -42,7 +42,7 @@ public record RevealingPayload(BlockPos pos, boolean worn, int light, boolean he
 	}
 
 	public record AspectAmount(String id, int amount, int color, int glyph) {
-		private static final StreamCodec<RegistryFriendlyByteBuf, AspectAmount> STREAM_CODEC = StreamCodec.composite(
+		static final StreamCodec<RegistryFriendlyByteBuf, AspectAmount> STREAM_CODEC = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(AspectCatalog.MAX_ID_LENGTH), AspectAmount::id,
 			ByteBufCodecs.VAR_INT, AspectAmount::amount,
 			ByteBufCodecs.INT, AspectAmount::color,

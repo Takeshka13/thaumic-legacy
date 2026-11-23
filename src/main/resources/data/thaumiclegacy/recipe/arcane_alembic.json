@@ -1,0 +1,25 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    "C C",
+    " L ",
+    " R "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "L": {
+      "item": "thaumiclegacy:lumen_glass"
+    },
+    "R": {
+      "item": "thaumiclegacy:resonant_copper"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:arcane_alembic",
+    "count": 1
+  },
+  "vis_cost": 16,
+  "research": "thaumiclegacy:essentia_distillation"
+}

@@ -10,8 +10,9 @@ Thaumic Legacy is an independent magic mod for Minecraft 1.21.1, Fabric, and Jav
 | 2. Field Observation | Complete locally. Two-client verification pending. | 1 | Craft a Thaumometer and Research Journal, observe three vanilla blocks, unlock the first research entry, and retain progress after restart. Verify that two real clients on a dedicated server see independent progress before closing multiplayer QA. |
 | 3. Aura and Magical Crafting | Aura & Flux Foundation and Arcane Workbench complete and verified locally. Two-client QA and balance tuning remain open. | 2 | Three shaped recipes spend local Vis. Arcane Foundations gates advanced recipes. Save and reload preserve the workbench grid, research, and aura ledger. |
 | 3a. Aura Nodes and Wand Charging | Foundation implemented. Two-client QA and balance tuning remain open. | 2, 3 | Find a naturally generated node, study it, charge a wand without moving chunk Vis, and verify node and journal state across reload. |
-| 4. Experiments and Alchemy | Alchemy Foundation complete and verified locally. Two-client QA, distillation, and transport remain open. | 2, 3 | Players unlock Alchemy Foundations, craft a Crucible, extract Essentia, and use catalysts. The mixture survives reloads and discarded residue affects local Flux. |
-| 5. Workshop Logistics | Planned | 4 | Filters, valves, and buffers supply two consumers on one bounded network. Backpressure, unavailable endpoints, and reload preserve stored material. |
+| 4. Experiments and Alchemy | Alchemy Foundation complete and verified locally. | 2, 3 | Players unlock Alchemy Foundations, craft a Crucible, extract Essentia, and use catalysts. The mixture survives reloads and discarded residue affects local Flux. |
+| 5a. Essentia Logistics and Thaumonomicon | Manual distillation and categorized research foundation implemented. Two-client QA remains open. | 4 | Brew Lumen Glass to unlock an Alchemical Furnace, Arcane Alembic, and Warded Jar. Distill and transfer by phial. The Thaumonomicon preserves existing discoveries and displays available research by category. |
+| 5b. Workshop Logistics | Planned | 5a | Tubes, valves, and filters route typed essentia on a bounded network. Backpressure, unavailable endpoints, and reload preserve stored material. |
 | 6. Rituals and Spellcraft | Planned | 3, 4. 5 supplies optional automation. | An original multiblock completes a ritual or fails in a readable and recoverable way. One implement casts two mechanically distinct effects. |
 | 7. Exploration and Ecology | Planned | 3, 4. Content design can start earlier. | New exploration sites, creatures, and local anomaly recovery form a repeatable loop. Existing saves retain an attainable progression route. |
 | 8. Golems and Advanced Workshop | Planned | 5, 6. Optional roles can use 7. | Two construct jobs run within owner and navigation budgets, stop safely when blocked, and resume after restart. Workshops gain useful late-game upgrades. |
@@ -22,6 +23,12 @@ Testing starts at each milestone. Agree on measurable tick, network, and entity 
 ## Deferred work
 
 Public API compatibility remains an architectural option. A public API release, separate addons, and bridges for AE2, Create, and other mods have no scheduled milestone. The [Addon API proposal](ADDON_API.md) remains a reference and confers no implementation commitment. See the [Feature Matrix](FEATURE_MATRIX.md) and [Gameplay Systems](GAMEPLAY_SYSTEMS.md) for the active scopes.
+
+## Planned multiblock structures
+
+- **Infernal Furnace** is an advanced smelting structure with explicit assembly, input and output rules, and recoverable teardown.
+- **Infusion Altar** centers on a **Runic Matrix** above an **Arcane Pedestal**, with surrounding **Arcane Pedestals** for ingredients. It depends on reliable stored essentia. Its design needs typed essentia consumption during a ritual, visible stability and instability, and recoverable failure consequences such as displaced ingredients or local Flux.
+- **Golem Press** follows infusion and component crafting. Assembly consumes its inputs once, with a clear recovery path if the structure or power supply is interrupted.
 
 ## Project Foundation verification
 
@@ -60,3 +67,7 @@ Implemented and verified locally with a Java 21 build and all 26 GameTest passin
 ### Aura Nodes and Wand Charging Foundation
 
 Normal, Bright, and Unstable nodes appear in fresh Overworld chunks. The Thaumometer records individual nodes in the Research Journal. Worn Goggles of Revealing list nearby loaded nodes. The Wand siphons primal Vis from studied nodes, whose reserves recover independently of the local chunk ledger. [Aura Nodes](AURA_NODES.md) · [Aura Node Testing](AURA_NODES_TESTING.md)
+
+### Essentia Logistics and Thaumonomicon
+
+The Alchemical Furnace processes a profiled input into an Arcane Alembic. Reusable phials transfer individual aspects into Warded Jars. The Thaumonomicon keeps existing observations and the aspect index and adds eight data-driven research categories. [Progression, recipes, and transport design](ESSENTIA_LOGISTICS.md)

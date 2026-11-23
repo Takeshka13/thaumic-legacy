@@ -3,6 +3,7 @@ package dev.thaumiclegacy.alchemy;
 import dev.thaumiclegacy.alchemy.CrucibleBlock.Phase;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.AuraService;
+import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.research.ResearchProgress;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -271,6 +272,9 @@ public final class CrucibleBlockEntity extends BlockEntity {
 		setChanged();
 		effect(server, ParticleTypes.EFFECT, SoundEvents.BREWING_STAND_BREW);
 		if (thrower != null) {
+			if (ThaumicLegacy.id("lumen_glass").equals(BuiltInRegistries.ITEM.getKey(result.getItem()))) {
+				ResearchProgress.recordLumenBrew(thrower);
+			}
 			feedback(thrower, "crafted", result.getHoverName(), result.getCount());
 		}
 		return true;
