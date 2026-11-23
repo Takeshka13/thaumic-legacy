@@ -1,0 +1,8 @@
+{
+  "type": "thaumiclegacy:aura_node",
+  "config": {
+    "normal_weight": 75,
+    "bright_weight": 15,
+    "unstable_weight": 10
+  }
+}

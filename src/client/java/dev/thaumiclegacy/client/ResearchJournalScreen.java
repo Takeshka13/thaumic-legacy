@@ -104,6 +104,10 @@ final class ResearchJournalScreen extends Screen {
 		String alchemyState = journal.alchemyFoundationsUnlocked() ? "unlocked" : "locked";
 		paragraphs.add(new Paragraph(Component.translatable(KEY + "alchemy." + alchemyState + ".title"), ACCENT, 3));
 		paragraphs.add(new Paragraph(Component.translatable(KEY + "alchemy." + alchemyState + ".body"), INK, 8));
+		var nodeProgress = journal.nodeProgress();
+		addNodeResearch(paragraphs, "node_basics", nodeProgress.basics());
+		addNodeResearch(paragraphs, "node_study", nodeProgress.observed() > 0, nodeProgress.observed());
+		addNodeResearch(paragraphs, "wand_charging", nodeProgress.charged());
 
 		Set<ResourceLocation> detailedBlocks = new HashSet<>();
 		for (SpecimenView specimen : journal.specimens()) {
@@ -127,6 +131,12 @@ final class ResearchJournalScreen extends Screen {
 		}
 
 		return paragraphs;
+	}
+
+	private static void addNodeResearch(List<Paragraph> paragraphs, String id, boolean completed, Object... detail) {
+		String key = KEY + id + (completed ? ".unlocked." : ".locked.");
+		paragraphs.add(new Paragraph(Component.translatable(key + "title"), ACCENT, 3));
+		paragraphs.add(new Paragraph(Component.translatable(key + "body", detail), INK, 8));
 	}
 
 	private List<Paragraph> aspectParagraphs() {

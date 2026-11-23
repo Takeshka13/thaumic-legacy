@@ -9,6 +9,7 @@ Thaumic Legacy is an independent magic mod for Minecraft 1.21.1, Fabric, and Jav
 | 1. Project Foundation | Complete locally | Existing Fabric scaffold | Build and launch both environments on Java 21. Verify mod loading and a clean dedicated-server shutdown. |
 | 2. Field Observation | Complete locally. Two-client verification pending. | 1 | Craft a Thaumometer and Research Journal, observe three vanilla blocks, unlock the first research entry, and retain progress after restart. Verify that two real clients on a dedicated server see independent progress before closing multiplayer QA. |
 | 3. Aura and Magical Crafting | Aura & Flux Foundation and Arcane Workbench complete and verified locally. Two-client QA and balance tuning remain open. | 2 | Three shaped recipes spend local Vis. Arcane Foundations gates advanced recipes. Save and reload preserve the workbench grid, research, and aura ledger. |
+| 3a. Aura Nodes and Wand Charging | Foundation implemented. Two-client QA and balance tuning remain open. | 2, 3 | Find a naturally generated node, study it, charge a wand without moving chunk Vis, and verify node and journal state across reload. |
 | 4. Experiments and Alchemy | Alchemy Foundation complete and verified locally. Two-client QA, distillation, and transport remain open. | 2, 3 | Players unlock Alchemy Foundations, craft a Crucible, extract Essentia, and use catalysts. The mixture survives reloads and discarded residue affects local Flux. |
 | 5. Workshop Logistics | Planned | 4 | Filters, valves, and buffers supply two consumers on one bounded network. Backpressure, unavailable endpoints, and reload preserve stored material. |
 | 6. Rituals and Spellcraft | Planned | 3, 4. 5 supplies optional automation. | An original multiblock completes a ritual or fails in a readable and recoverable way. One implement casts two mechanically distinct effects. |
@@ -54,4 +55,8 @@ Alchemy Foundations connects the existing research graph and Aqua discovery to C
 
 ### Classic Gameplay Alignment
 
-Implemented and verified locally with a Java 21 build and all 26 GameTest passing. The Thaumometer replaces the Field Lens in new progression and uses the same saved discoveries. The heated Crucible processes dropped reagents and catalysts. Worn Goggles of Revealing show the Crucible mixture and reveal nearby heat and light sources in view. The starter Wand persists six independent primal Vis reserves. Wand charging and aura nodes remain planned. The two-real-client scenario remains open. [Classic Magical Tools](CLASSIC_TOOLS.md) · [Alchemy Testing](ALCHEMY_TESTING.md)
+Implemented and verified locally with a Java 21 build and all 26 GameTest passing at that milestone. The Thaumometer replaces the Field Lens in new progression and uses the same saved discoveries. The heated Crucible processes dropped reagents and catalysts. Worn Goggles of Revealing show the Crucible mixture and reveal nearby heat and light sources in view. The starter Wand persists six independent primal Vis reserves. The two-real-client scenario remains open. [Classic Magical Tools](CLASSIC_TOOLS.md) · [Alchemy Testing](ALCHEMY_TESTING.md)
+
+### Aura Nodes and Wand Charging Foundation
+
+Normal, Bright, and Unstable nodes appear in fresh Overworld chunks. The Thaumometer records individual nodes in the Research Journal. Worn Goggles of Revealing list nearby loaded nodes. The Wand siphons primal Vis from studied nodes, whose reserves recover independently of the local chunk ledger. [Aura Nodes](AURA_NODES.md) · [Aura Node Testing](AURA_NODES_TESTING.md)

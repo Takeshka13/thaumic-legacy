@@ -187,9 +187,10 @@ final class AspectDiscoveryData extends SavedData {
 					.limit(JournalSnapshotPayload.MAX_DISCOVERED)
 					.map(id -> view(catalog, id, 0, progress.known)).forEach(discovered::add);
 		}
+		boolean firstResearch = firstResearchUnlocked(player, legacy);
 		return new JournalSnapshotPayload(legacy.stream().limit(JournalSnapshotPayload.MAX_LEGACY).toList(),
-				firstResearchUnlocked(player, legacy), arcaneFoundationsUnlocked(player, legacy),
-				alchemyFoundationsUnlocked(player, legacy), specimens, discovered);
+				firstResearch, arcaneFoundationsUnlocked(player, legacy), alchemyFoundationsUnlocked(player, legacy),
+				specimens, discovered, new JournalSnapshotPayload.NodeProgress(firstResearch, 0, false));
 	}
 
 	private static AspectView view(AspectCatalog catalog, String id, int amount, Set<String> disclosed) {

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "variant=normal": {
+      "model": "thaumiclegacy:block/aura_node_normal"
+    },
+    "variant=bright": {
+      "model": "thaumiclegacy:block/aura_node_bright"
+    },
+    "variant=unstable": {
+      "model": "thaumiclegacy:block/aura_node_unstable"
+    }
+  }
+}

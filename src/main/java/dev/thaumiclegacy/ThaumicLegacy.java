@@ -7,6 +7,7 @@ import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.aura.ThaumometerItem;
 import dev.thaumiclegacy.item.AuraSurveyorItem;
 import dev.thaumiclegacy.item.CleansingSaltItem;
+import dev.thaumiclegacy.node.AuraNodes;
 import dev.thaumiclegacy.revealing.GogglesItem;
 import dev.thaumiclegacy.revealing.RevealingSight;
 import dev.thaumiclegacy.research.FieldLensItem;
@@ -65,6 +66,7 @@ public class ThaumicLegacy implements ModInitializer {
 		FuelRegistry.INSTANCE.add(emberSalt, 4_800);
 		ArcaneWorkbench.register();
 		Alchemy.register();
+		AuraNodes.register();
 		RevealingSight.register(goggles);
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {
 			entries.accept(researchJournal);

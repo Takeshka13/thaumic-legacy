@@ -1,0 +1,7 @@
+{
+  "parent": "thaumiclegacy:block/aura_node",
+  "textures": {
+    "core": "thaumiclegacy:block/aura_node_bright",
+    "accent": "minecraft:block/amethyst_block"
+  }
+}

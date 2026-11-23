@@ -37,9 +37,9 @@ Craft the Thaumometer from two copper ingots, two glass panes, and one amethyst 
 
 Operators can inspect and exercise the balances through the `/thaumiclegacy aura` commands. This phase establishes the measurement loop and the server contract for future crafting or spell costs. An ordinary crafting recipe produces the instrument.
 
-## Future TC4-inspired nodes
+## TC4-inspired nodes
 
-Model a node as a world object with its own position, size, stability, and capacity for individual aspects. Define node-to-chunk transfer as an explicit server operation before introducing a node that can charge the scalar Vis ledger. Require loaded participants for transfers and keep node energy and regional Vis separately inspectable. Portable nodes need persistent identity and a transfer rule that prevents a node from being duplicated or credited both as a placed object and as an item. The TC6-style area ledger remains usable without nodes.
+Aura nodes hold six primal reserves and supply wands through a server-authoritative transfer. Node depletion, recharge, and wand charging are independent of the scalar chunk ledger. Any future portable nodes will need persistent identity and a rule for moving that identity between placed and carried forms. [Aura Nodes](AURA_NODES.md)
 
 ## Future interface and balance
 

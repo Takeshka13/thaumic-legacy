@@ -11,19 +11,21 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 public record JournalSnapshotPayload(List<ResourceLocation> observations, boolean unlocked, boolean arcaneFoundationsUnlocked,
-		boolean alchemyFoundationsUnlocked, List<SpecimenView> specimens, List<AspectView> discovered) implements CustomPacketPayload {
+		boolean alchemyFoundationsUnlocked, List<SpecimenView> specimens, List<AspectView> discovered,
+		NodeProgress nodeProgress) implements CustomPacketPayload {
 	static final int MAX_SPECIMENS = 256;
 	static final int MAX_DISCOVERED = 256;
 	static final int MAX_LEGACY = 3;
-	public static final Type<JournalSnapshotPayload> TYPE = new Type<>(ThaumicLegacy.id("aspect_journal_details_v3"));
+	public static final Type<JournalSnapshotPayload> TYPE = new Type<>(ThaumicLegacy.id("aspect_journal_details_v4"));
 	public static final StreamCodec<RegistryFriendlyByteBuf, JournalSnapshotPayload> STREAM_CODEC = StreamCodec.composite(
 			ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_LEGACY)), JournalSnapshotPayload::observations,
-			ByteBufCodecs.BOOL, JournalSnapshotPayload::unlocked,
-			ByteBufCodecs.BOOL, JournalSnapshotPayload::arcaneFoundationsUnlocked,
-			ByteBufCodecs.BOOL, JournalSnapshotPayload::alchemyFoundationsUnlocked,
+			ResearchFlags.STREAM_CODEC, journal -> new ResearchFlags(journal.unlocked, journal.arcaneFoundationsUnlocked,
+					journal.alchemyFoundationsUnlocked),
 			SpecimenView.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_SPECIMENS)), JournalSnapshotPayload::specimens,
 			AspectView.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_DISCOVERED)), JournalSnapshotPayload::discovered,
-			JournalSnapshotPayload::new);
+			NodeProgress.STREAM_CODEC, JournalSnapshotPayload::nodeProgress,
+			(observations, flags, specimens, discovered, nodes) -> new JournalSnapshotPayload(observations,
+					flags.unlocked(), flags.arcane(), flags.alchemy(), specimens, discovered, nodes));
 
 	public JournalSnapshotPayload {
 		observations = List.copyOf(observations);
@@ -34,6 +36,19 @@ public record JournalSnapshotPayload(List<ResourceLocation> observations, boolea
 	@Override
 	public Type<JournalSnapshotPayload> type() {
 		return TYPE;
+	}
+
+	private record ResearchFlags(boolean unlocked, boolean arcane, boolean alchemy) {
+		private static final StreamCodec<RegistryFriendlyByteBuf, ResearchFlags> STREAM_CODEC = StreamCodec.composite(
+				ByteBufCodecs.BOOL, ResearchFlags::unlocked, ByteBufCodecs.BOOL, ResearchFlags::arcane,
+				ByteBufCodecs.BOOL, ResearchFlags::alchemy, ResearchFlags::new);
+	}
+
+	public record NodeProgress(boolean basics, int observed, boolean charged) {
+		private static final StreamCodec<RegistryFriendlyByteBuf, NodeProgress> STREAM_CODEC = StreamCodec.composite(
+				ByteBufCodecs.BOOL, NodeProgress::basics,
+				ByteBufCodecs.VAR_INT, NodeProgress::observed,
+				ByteBufCodecs.BOOL, NodeProgress::charged, NodeProgress::new);
 	}
 
 	public record SpecimenView(ResourceLocation id, String kind, List<AspectView> aspects) {
