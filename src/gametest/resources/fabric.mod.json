@@ -6,7 +6,8 @@
   "entrypoints": {
     "fabric-gametest": [
       "dev.thaumiclegacy.aspect.AspectCatalogGameTest",
-      "dev.thaumiclegacy.research.FieldObservationGameTest"
+      "dev.thaumiclegacy.research.FieldObservationGameTest",
+      "dev.thaumiclegacy.aura.AuraGameTest"
     ]
   },
   "depends": {

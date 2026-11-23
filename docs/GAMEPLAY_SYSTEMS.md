@@ -48,15 +48,11 @@ Use built-in recipe and advancement facilities when they fit. Keep milestones in
 
 ### F02 Aura and Vis
 
-Implement **ambient charge** as an integer balance with a baseline and an upper bound for each dimension-local cell. Regenerate at a bounded cadence. A workshop can draw charge from its own cell so cost and recovery are easy to read. Prototype one cell per chunk, then choose the scale through playtesting. Neighbor exchange is a later candidate and must conserve total charge apart from explicit regeneration and spending.
-
-Track dirty loaded cells, cap work per tick, and use a deterministic default for untouched cells. A recipe consumes charge only when confirmed. Unloaded periods receive either no simulation or one explicitly bounded recovery calculation. Choose and document the rule before balancing recipes.
+**Vis** is a bounded balance for each dimension-local chunk. The server evaluates elapsed world time when a cell is used. Untouched cells have a deterministic default, and there is no per-tick scan or forced chunk load. The Thaumometer reads the current cell. A future workshop can spend Vis through the same server operation after validating its recipe and output.
 
 ### F03 Flux and remediation
 
-Use **residue** as a separate pollution balance. High residue reduces recovery, and an alchemical waste outlet adds residue that the player can measure. A treatment device consumes a prepared filter and collects a stable waste product for disposal. Make cleanup a local trade-off and provide a slow passive recovery floor. Record each source and sink for test diagnostics.
-
-Keep this ledger beside charge and keep spread disabled in the first version. Add a localized warning and display a tier with text or shape as well as color. Check that repeated loading, block breakage, or cleanup cannot duplicate the waste product or bypass input costs.
+**Flux** is a separate, bounded pollution balance. It decays slowly and reduces or temporarily stops Vis recovery. The Thaumometer displays the balance and recovery state. Operator commands exercise pollution and cleanup through internal operations. Alchemical sources, treatment devices, neighbor transfer, and anomalies can build on those operations in later stages. The [aura design](AURA_SYSTEM.md) records the rules and historical comparisons.
 
 ### F07 Alchemy and distillation
 

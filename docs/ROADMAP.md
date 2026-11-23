@@ -8,7 +8,7 @@ Thaumic Legacy is an independent magic mod for Minecraft 1.21.1, Fabric, and Jav
 | --- | --- | --- | --- |
 | 1. Project Foundation | Complete locally | Existing Fabric scaffold | Build and launch both environments on Java 21. Verify mod loading and a clean dedicated-server shutdown. |
 | 2. Field Observation | Complete locally. Two-client verification pending. | 1 | Craft a Field Lens and Research Journal, observe three vanilla blocks, unlock the first research entry, and retain progress after restart. Verify that two real clients on a dedicated server see independent progress before closing multiplayer QA. |
-| 3. Aura and Magical Crafting | Planned | 2 | A workshop consumes finite local charge for one useful recipe. Players can read regional charge and residue. Save/reload and two simultaneous consumers preserve the resource ledger. |
+| 3. Aura and Magical Crafting | Aura & Flux Foundation functional. Balance tuning and magical crafting integration pending. | 2 | A workshop consumes finite local Vis for one useful recipe. The Thaumometer reads regional Vis and Flux. Save and reload preserve the resource ledger. |
 | 4. Experiments and Alchemy | Planned | 2, 3 | Field evidence and a small lab experiment unlock a useful alchemical product. Distillation, capacity limits, manual transfer, and waste are observable. |
 | 5. Workshop Logistics | Planned | 4 | Filters, valves, and buffers supply two consumers on one bounded network. Backpressure, unavailable endpoints, and reload preserve stored material. |
 | 6. Rituals and Spellcraft | Planned | 3, 4. 5 supplies optional automation. | An original multiblock completes a ritual or fails in a readable and recoverable way. One implement casts two mechanically distinct effects. |
@@ -39,3 +39,7 @@ The GitHub Actions workflow selects JDK 21. Verification on a hosted GitHub runn
 ### Aspect Discovery extension
 
 The Field Lens and Research Journal use 52 classic aspects across 98 bundled specimen profiles. The Thaumcraft 6 API supplies the baseline, with compatible historical extensions from Thaumcraft 4. Discovery uses evidence and compound prerequisites. Versioned per-player storage preserves earlier discoveries and observations. See [Aspect Discovery](ASPECTS.md) for controls, data conventions, and multiplayer checks.
+
+### Aura and Flux foundation
+
+The foundation is functional and locally verified. The server stores one independent aura cell per dimension and chunk. Vis recovers as world ticks pass, Flux slows recovery, and the craftable Thaumometer reports a point-in-time reading. Operator commands exercise spending, pollution, and remediation. Integrate the first magical crafting consumer, then tune Vis costs, capacity, recovery, and Flux against that gameplay loop. Revisit the meter's visual feedback, audio, and accessibility as aura gains more consumers. See [Aura System](AURA_SYSTEM.md) for rules and historical context and [Aura Testing](AURA_TESTING.md) for verification.

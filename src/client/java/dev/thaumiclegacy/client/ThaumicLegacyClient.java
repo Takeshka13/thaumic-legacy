@@ -1,5 +1,6 @@
 package dev.thaumiclegacy.client;
 
+import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
 import net.fabricmc.api.ClientModInitializer;
@@ -16,7 +17,15 @@ public class ThaumicLegacyClient implements ClientModInitializer {
 		ScanFeedback scanFeedback = new ScanFeedback();
 		ClientPlayNetworking.registerGlobalReceiver(ScanFeedbackPayload.TYPE, (payload, context) ->
 			scanFeedback.show(context.client(), payload));
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> scanFeedback.clear());
-		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> scanFeedback.render(graphics));
+		AuraReadingOverlay auraReading = new AuraReadingOverlay();
+		ClientPlayNetworking.registerGlobalReceiver(AuraReadingPayload.TYPE, (payload, context) -> auraReading.show(payload));
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			scanFeedback.clear();
+			auraReading.clear();
+		});
+		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> {
+			scanFeedback.render(graphics);
+			auraReading.render(graphics);
+		});
 	}
 }
