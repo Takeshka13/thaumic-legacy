@@ -1,0 +1,12 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": ["GAG", " R "],
+  "key": {
+    "G": {"item": "minecraft:glass_pane"},
+    "A": {"item": "minecraft:amethyst_shard"},
+    "R": {"item": "thaumiclegacy:resonant_copper"}
+  },
+  "result": {"id": "thaumiclegacy:attuned_lens", "count": 1},
+  "vis_cost": 16,
+  "research": "thaumiclegacy:arcane_foundations"
+}

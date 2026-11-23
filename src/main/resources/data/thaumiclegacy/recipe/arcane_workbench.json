@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" C ", "GTG", " S "],
+  "key": {
+    "C": {"item": "minecraft:copper_ingot"},
+    "G": {"item": "minecraft:glass_pane"},
+    "T": {"item": "minecraft:crafting_table"},
+    "S": {"item": "minecraft:stone"}
+  },
+  "result": {"id": "thaumiclegacy:arcane_workbench", "count": 1}
+}

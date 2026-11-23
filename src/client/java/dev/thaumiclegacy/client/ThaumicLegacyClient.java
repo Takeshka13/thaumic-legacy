@@ -3,14 +3,17 @@ package dev.thaumiclegacy.client;
 import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.workbench.ArcaneWorkbench;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.minecraft.client.gui.screens.MenuScreens;
 
 public class ThaumicLegacyClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
+		MenuScreens.register(ArcaneWorkbench.MENU, ArcaneWorkbenchScreen::new);
 		ClientPlayNetworking.registerGlobalReceiver(JournalSnapshotPayload.TYPE, (payload, context) ->
 			context.client().setScreen(new ResearchJournalScreen(payload)));
 

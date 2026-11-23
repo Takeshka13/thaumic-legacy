@@ -28,6 +28,7 @@ final class AspectDiscoveryData extends SavedData {
 	private static final String VERSION_TAG = "version";
 	private static final int CLASSIC_CATALOG_VERSION = 1;
 	private static final String ARCHIVE_TAG = "archived_known";
+	private static final String LUX = "thaumiclegacy:lux";
 	// Ember was the old primary for fire sources. The other old IDs have no direct equivalent.
 	private static final Map<String, String> LEGACY_EQUIVALENTS = Map.of("ember", "thaumiclegacy:ignis");
 	private static final Factory<AspectDiscoveryData> FACTORY = new Factory<>(
@@ -155,6 +156,11 @@ final class AspectDiscoveryData extends SavedData {
 		return ObservationCatalog.firstResearchUnlocked(count);
 	}
 
+	boolean arcaneFoundationsUnlocked(UUID player, List<ResourceLocation> legacy) {
+		Progress progress = players.get(player);
+		return progress != null && progress.known.contains(LUX) && firstResearchUnlocked(player, legacy);
+	}
+
 	JournalSnapshotPayload snapshot(UUID player, List<ResourceLocation> legacy, AspectCatalog catalog) {
 		importLegacy(player, legacy, catalog);
 		Progress progress = players.get(player);
@@ -176,7 +182,7 @@ final class AspectDiscoveryData extends SavedData {
 					.map(id -> view(catalog, id, 0, progress.known)).forEach(discovered::add);
 		}
 		return new JournalSnapshotPayload(legacy.stream().limit(JournalSnapshotPayload.MAX_LEGACY).toList(),
-				firstResearchUnlocked(player, legacy), specimens, discovered);
+				firstResearchUnlocked(player, legacy), arcaneFoundationsUnlocked(player, legacy), specimens, discovered);
 	}
 
 	private static AspectView view(AspectCatalog catalog, String id, int amount, Set<String> disclosed) {

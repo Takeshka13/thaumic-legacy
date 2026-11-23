@@ -62,9 +62,9 @@ Use 1.21.1 recipe or reload facilities after choosing the schema. Match a determ
 
 ### F08 Magical crafting
 
-Use a specialized bench with an ingredient panel and a preview of the local charge cost. Design one first recipe that applies field knowledge to craft a useful workshop tool. Later recipes can choose between multiple input bundles with different efficiency. Knowledge records remain prerequisites instead of consumable materials.
+The Arcane Workbench exposes a persistent 3×3 ingredient grid, a result preview, and the cost and availability of local Vis. Arcane Foundations uses existing observation progress and knowledge of Lux to unlock advanced recipes. The three recipes lead from raw materials to the Aura Surveyor.
 
-Use a normal server-backed menu with its own rules for manual output pickup and shift-clicking. Validate recipe, remaining capacity, ownership, inputs, and charge in one operation. Prevent an old preview from committing after recharge conditions or content definitions change.
+The menu uses a dedicated craft action. The server checks the station, recipe, player research, input stacks, local Vis, and destination capacity before inserting the result. A request is bound to one attempt on the open menu. See [Arcane Workbench](ARCANE_WORKBENCH.md) for recipe data and transaction behavior.
 
 ### F09 Essences and storage
 

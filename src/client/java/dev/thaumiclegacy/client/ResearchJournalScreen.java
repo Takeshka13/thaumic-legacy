@@ -98,6 +98,9 @@ final class ResearchJournalScreen extends Screen {
 		String state = journal.unlocked() ? "unlocked" : "locked";
 		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".title"), ACCENT, 3));
 		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".body"), INK, 8));
+		String arcaneState = journal.arcaneFoundationsUnlocked() ? "unlocked" : "locked";
+		paragraphs.add(new Paragraph(Component.translatable(KEY + "arcane." + arcaneState + ".title"), ACCENT, 3));
+		paragraphs.add(new Paragraph(Component.translatable(KEY + "arcane." + arcaneState + ".body"), INK, 8));
 
 		Set<ResourceLocation> detailedBlocks = new HashSet<>();
 		for (SpecimenView specimen : journal.specimens()) {

@@ -1,0 +1,13 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [" L ", "RTP"],
+  "key": {
+    "L": {"item": "thaumiclegacy:attuned_lens"},
+    "R": {"item": "thaumiclegacy:resonant_copper"},
+    "T": {"item": "thaumiclegacy:thaumometer"},
+    "P": {"item": "minecraft:copper_ingot"}
+  },
+  "result": {"id": "thaumiclegacy:aura_surveyor", "count": 1},
+  "vis_cost": 60,
+  "research": "thaumiclegacy:arcane_foundations"
+}

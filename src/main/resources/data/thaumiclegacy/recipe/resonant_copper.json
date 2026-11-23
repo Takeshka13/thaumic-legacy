@@ -1,0 +1,10 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": ["R", "C"],
+  "key": {
+    "R": {"item": "minecraft:redstone"},
+    "C": {"item": "minecraft:copper_ingot"}
+  },
+  "result": {"id": "thaumiclegacy:resonant_copper", "count": 1},
+  "vis_cost": 8
+}

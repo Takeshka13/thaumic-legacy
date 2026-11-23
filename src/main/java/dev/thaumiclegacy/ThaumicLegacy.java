@@ -4,10 +4,12 @@ import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.AuraCommands;
 import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.aura.ThaumometerItem;
+import dev.thaumiclegacy.item.AuraSurveyorItem;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ResearchJournalItem;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.workbench.ArcaneWorkbench;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -36,10 +38,20 @@ public class ThaumicLegacy implements ModInitializer {
 				new ResearchJournalItem(new Item.Properties().stacksTo(1)));
 		Item thaumometer = Registry.register(BuiltInRegistries.ITEM, id("thaumometer"),
 				new ThaumometerItem(new Item.Properties().stacksTo(1)));
+		Item resonantCopper = Registry.register(BuiltInRegistries.ITEM, id("resonant_copper"), new Item(new Item.Properties()));
+		Item attunedLens = Registry.register(BuiltInRegistries.ITEM, id("attuned_lens"), new Item(new Item.Properties()));
+		Item auraSurveyor = Registry.register(BuiltInRegistries.ITEM, id("aura_surveyor"),
+				new AuraSurveyorItem(new Item.Properties().stacksTo(1)));
+		ArcaneWorkbench.register();
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {
 			entries.accept(fieldLens);
 			entries.accept(researchJournal);
 			entries.accept(thaumometer);
+			entries.accept(auraSurveyor);
+		});
+		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS).register(entries -> {
+			entries.accept(resonantCopper);
+			entries.accept(attunedLens);
 		});
 		PayloadTypeRegistry.playS2C().register(JournalSnapshotPayload.TYPE, JournalSnapshotPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(ScanFeedbackPayload.TYPE, ScanFeedbackPayload.STREAM_CODEC);

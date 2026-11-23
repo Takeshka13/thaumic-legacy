@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.core.BlockPos;
@@ -335,7 +336,9 @@ public class FieldObservationGameTest implements FabricGameTest {
         var reloaded = AspectDiscoveryData.load(NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap()), registries);
         test.assertValueEqual(reloaded.snapshot(first, firstLegacy, catalog), firstSnapshot, "Migrated research survives disk reload");
         test.assertValueEqual(reloaded.snapshot(second, List.of(), catalog), secondSnapshot, "Isolated progress survives disk reload");
-        test.assertValueEqual(reloaded.save(new CompoundTag(), registries), afterMigration, "Reload preserves both archives and IDs");
+        var afterReload = reloaded.save(new CompoundTag(), registries);
+        test.assertValueEqual(afterReload.getInt("version"), afterMigration.getInt("version"), "Reload preserves the schema version");
+        test.assertValueEqual(playersById(afterReload), playersById(afterMigration), "Reload preserves both archives and IDs");
         test.succeed();
     }
 
@@ -357,9 +360,12 @@ public class FieldObservationGameTest implements FabricGameTest {
     }
 
     private static List<String> archivedIds(CompoundTag root, UUID player) {
-        var players = root.getList("players", Tag.TAG_COMPOUND);
-        return players.stream().map(CompoundTag.class::cast).filter(entry -> entry.getUUID("uuid").equals(player))
-            .findFirst().orElseThrow().getList("archived_known", Tag.TAG_STRING).stream().map(Tag::getAsString).toList();
+        return playersById(root).get(player).getList("archived_known", Tag.TAG_STRING).stream().map(Tag::getAsString).toList();
+    }
+
+    private static Map<UUID, CompoundTag> playersById(CompoundTag root) {
+        return root.getList("players", Tag.TAG_COMPOUND).stream().map(CompoundTag.class::cast)
+            .collect(Collectors.toMap(entry -> entry.getUUID("uuid"), entry -> entry));
     }
 
     private static DimensionDataStorage saveAndOpenStorage(GameTestHelper test) {
