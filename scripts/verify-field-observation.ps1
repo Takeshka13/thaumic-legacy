@@ -54,8 +54,8 @@ try {
 
     $catalog = Read-JsonEntry $archive 'data/thaumiclegacy/thaumiclegacy/aspects/base.json'
     $assignments = Read-JsonEntry $archive 'data/thaumiclegacy/thaumiclegacy/assignments/base.json'
-    if ($catalog.aspects.Count -ne 48 -or $assignments.assignments.Count -ne 98) {
-        throw 'Expected 48 aspects and 98 bundled specimen profiles.'
+    if ($catalog.aspects.Count -ne 52 -or $assignments.assignments.Count -ne 98) {
+        throw 'Expected 52 aspects and 98 bundled specimen profiles.'
     }
 
     foreach ($item in @('field_lens', 'research_journal')) {
@@ -116,6 +116,10 @@ try {
         'screen.thaumiclegacy.journal.kind.entity',
         'screen.thaumiclegacy.journal.discovered',
         'screen.thaumiclegacy.journal.discovered.empty',
+        'screen.thaumiclegacy.journal.tab.observations',
+        'screen.thaumiclegacy.journal.tab.aspects',
+        'screen.thaumiclegacy.journal.aspect.primary',
+        'screen.thaumiclegacy.journal.aspect.formula',
         'screen.thaumiclegacy.journal.aspect.unknown',
         'screen.thaumiclegacy.journal.aspect.amount',
         'screen.thaumiclegacy.journal.locked.title',
@@ -126,7 +130,7 @@ try {
         'observation.minecraft.torch',
         'observation.minecraft.oak_log'
     )
-    $requiredKeys += @($catalog.aspects | ForEach-Object { "aspect.thaumiclegacy.$($_.id)" })
+    $requiredKeys += @($catalog.aspects | ForEach-Object { "aspect.$($_.id -replace ':', '.')" })
     $referenceKeys = $null
     foreach ($locale in @('en_us', 'ru_ru')) {
         $translations = Read-JsonEntry $archive "assets/thaumiclegacy/lang/$locale.json"

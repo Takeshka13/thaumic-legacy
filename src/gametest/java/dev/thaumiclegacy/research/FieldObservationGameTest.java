@@ -3,6 +3,7 @@ package dev.thaumiclegacy.research;
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.research.AspectDiscoveryData.Specimen;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -17,6 +18,12 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -63,13 +70,13 @@ public class FieldObservationGameTest implements FabricGameTest {
         BlockPos stone = test.absolutePos(new BlockPos(0, 1, 0));
         BlockPos torch = stone.east(3);
         BlockPos wood = stone.east(6);
-        BlockPos dirt = stone.east(9);
+        BlockPos unsupported = stone.east(9);
         var level = test.getLevel();
         level.setBlockAndUpdate(stone, Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(torch.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(torch, Blocks.TORCH.defaultBlockState());
         level.setBlockAndUpdate(wood, Blocks.OAK_LOG.defaultBlockState());
-        level.setBlockAndUpdate(dirt, Blocks.DIRT.defaultBlockState());
+        level.setBlockAndUpdate(unsupported, Blocks.BEDROCK.defaultBlockState());
 
         Item lens = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("field_lens"));
         ServerPlayer first = test.makeMockServerPlayerInLevel();
@@ -82,7 +89,7 @@ public class FieldObservationGameTest implements FabricGameTest {
         observe(first, stone, 1.1);
         checkObservations(test, data, first, false, "stone");
         observe(first, stone, 1.1);
-        observe(first, dirt, 1.1);
+        observe(first, unsupported, 1.1);
         observe(first, wood, 10.0);
         level.setBlockAndUpdate(wood.above(), Blocks.DIRT.defaultBlockState());
         observe(first, wood, 2.2);
@@ -114,12 +121,10 @@ public class FieldObservationGameTest implements FabricGameTest {
         BlockPos stone = test.absolutePos(new BlockPos(0, 1, 0));
         BlockPos torch = stone.east(2);
         BlockPos copper = stone.east(4);
-        BlockPos bricks = stone.south(2);
         level.setBlockAndUpdate(stone, Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(torch.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(torch, Blocks.TORCH.defaultBlockState());
         level.setBlockAndUpdate(copper, Blocks.COPPER_BLOCK.defaultBlockState());
-        level.setBlockAndUpdate(bricks, Blocks.STONE_BRICKS.defaultBlockState());
 
         Item lens = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("field_lens"));
         ServerPlayer first = test.makeMockServerPlayerInLevel();
@@ -130,14 +135,17 @@ public class FieldObservationGameTest implements FabricGameTest {
         observe(first, stone, 1.1);
         var afterStone = ResearchJournalItem.snapshot(first);
         test.assertFalse(afterStone.unlocked(), "One specimen cannot unlock research");
-        test.assertValueEqual(discovered(afterStone), List.of("grain"), "First primal discovery");
+        test.assertValueEqual(discovered(afterStone), List.of(id("ordo"), id("terra")), "Stone reveals two primals");
         test.assertValueEqual(afterStone.specimens().getFirst().aspects().stream()
-            .map(JournalSnapshotPayload.AspectView::id).toList(), List.of("", "grain"), "Unknown aspect remains hidden");
+            .map(JournalSnapshotPayload.AspectView::amount).toList(), List.of(1, 4), "Stone aspect quantities");
 
         observeHeld(first, Items.TORCH);
         var afterHeld = ResearchJournalItem.snapshot(first);
         test.assertTrue(afterHeld.unlocked(), "Two distinct specimens unlock research");
-        test.assertValueEqual(discovered(afterHeld), List.of("grain", "ember"), "Held item discovery");
+        test.assertValueEqual(discovered(afterHeld), List.of(id("ordo"), id("terra"), id("ignis")), "Held item discovery");
+        var hidden = afterHeld.specimens().getLast().aspects().getLast();
+        test.assertTrue(hidden.id().isEmpty() && hidden.parents().isEmpty() && hidden.glyph() == -1,
+            "Unknown Lux does not disclose its identity, parents, or glyph");
         var droppedTorch = test.spawnItem(Items.TORCH, new Vec3(0.5, 2, 0.5));
         pointAt(first, droppedTorch.position(), 0.4);
         useLensInAir(first);
@@ -164,18 +172,19 @@ public class FieldObservationGameTest implements FabricGameTest {
         cow.discard();
 
         test.assertValueEqual(Set.copyOf(discovered(ResearchJournalItem.snapshot(first))),
-            Set.of("grain", "ember", "current", "pulse"), "Compound evidence waits for known parents");
-        observe(first, bricks, 1.1);
+            Set.of(id("ordo"), id("terra"), id("ignis"), id("metallum")), "Compound evidence waits for known parents");
+        observeHeld(first, Items.FEATHER);
         var firstSnapshot = ResearchJournalItem.snapshot(first);
         test.assertValueEqual(specimens(firstSnapshot), List.of("block:stone", "item:torch", "block:torch",
-            "item:copper_ingot", "block:copper_block", "entity:cow", "block:stone_bricks"), "Specimen types and scan order");
+            "item:copper_ingot", "block:copper_block", "entity:cow", "item:feather"), "Specimen types and scan order");
         test.assertValueEqual(Set.copyOf(discovered(firstSnapshot)),
-            Set.of("grain", "ember", "current", "pulse", "lattice", "flint", "gleam", "alloy", "temper"),
-            "A new primal completes multiple earlier compounds");
-        test.assertValueEqual(firstSnapshot.specimens().getFirst().aspects().stream()
-            .map(JournalSnapshotPayload.AspectView::id).toList(), List.of("flint", "grain"), "Earlier profile reveals its compound");
-        var flint = firstSnapshot.discovered().stream().filter(aspect -> aspect.id().equals("flint")).findFirst().orElseThrow();
-        test.assertValueEqual(flint.parents(), List.of("grain", "lattice"), "Discovered compound reports its catalog formula");
+            Set.of(id("ordo"), id("terra"), id("ignis"), id("metallum"), id("aer"), id("lux")),
+            "The feather's Aer completes earlier Lux evidence");
+        var revealedLux = firstSnapshot.specimens().get(1).aspects().getLast();
+        test.assertValueEqual(revealedLux.id(), id("lux"), "Earlier torch reveals Lux");
+        test.assertValueEqual(revealedLux.amount(), 2, "Revealed compound retains the original quantity");
+        var lux = firstSnapshot.discovered().stream().filter(aspect -> aspect.id().equals(id("lux"))).findFirst().orElseThrow();
+        test.assertValueEqual(Set.copyOf(lux.parents()), Set.of(id("aer"), id("ignis")), "Discovered compound reports its formula");
         test.assertValueEqual(firstSnapshot.observations(), List.of(vanilla("stone"), vanilla("torch")), "Legacy observation IDs");
 
         var empty = ResearchJournalItem.snapshot(second);
@@ -185,7 +194,7 @@ public class FieldObservationGameTest implements FabricGameTest {
         var secondSnapshot = ResearchJournalItem.snapshot(second);
         test.assertFalse(secondSnapshot.unlocked(), "Research progress is per player");
         test.assertValueEqual(specimens(secondSnapshot), List.of("item:torch"), "Second player's specimen");
-        test.assertValueEqual(discovered(secondSnapshot), List.of("ember"), "Second player's discovery");
+        test.assertValueEqual(discovered(secondSnapshot), List.of(id("ignis")), "Second player's discovery");
 
         var storage = saveAndOpenStorage(test);
         var restored = reload(storage, AspectDiscoveryData.class, "thaumiclegacy_aspect_discoveries");
@@ -213,7 +222,40 @@ public class FieldObservationGameTest implements FabricGameTest {
             UUID player = UUID.randomUUID();
             order.forEach(specimen -> data.record(player, specimen, catalog));
             var discoveries = Set.copyOf(discovered(data.snapshot(player, List.of(), catalog)));
-            test.assertValueEqual(discoveries, catalog.definitions().keySet(), "Distinct specimens discover all 48 aspects");
+            test.assertValueEqual(discoveries, catalog.definitions().keySet(), "Distinct specimens discover all 52 aspects");
+        }
+        test.succeed();
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE)
+    public void distinguishesAspectsWithTheSameFormula(GameTestHelper test) {
+        var catalog = AspectCatalog.current();
+        var data = new AspectDiscoveryData();
+        var mortuus = id("mortuus");
+        var venenum = id("venenum");
+        var sharedParents = Set.of(id("aqua"), id("perditio"));
+        test.assertValueEqual(Set.copyOf(catalog.definitions().get(mortuus).parents()), sharedParents, "Mortuus parents");
+        test.assertValueEqual(Set.copyOf(catalog.definitions().get(venenum).parents()), sharedParents, "Venenum parents");
+
+        var bone = new Specimen("item", vanilla("bone"));
+        var bee = new Specimen("entity", vanilla("bee"));
+        for (var order : List.of(List.of(bone, bee), List.of(bee, bone))) {
+            UUID player = UUID.randomUUID();
+            data.record(player, order.getFirst(), catalog);
+            test.assertTrue(data.snapshot(player, List.of(), catalog).discovered().isEmpty(),
+                "Specimen evidence needs both known parents");
+            data.record(player, new Specimen("item", vanilla("water_bucket")), catalog);
+            data.record(player, new Specimen("item", vanilla("charcoal")), catalog);
+            var expected = order.getFirst().equals(bone) ? mortuus : venenum;
+            var other = expected.equals(mortuus) ? venenum : mortuus;
+            var discoveries = discovered(data.snapshot(player, List.of(), catalog));
+            test.assertTrue(discoveries.contains(expected) && !discoveries.contains(other),
+                "A shared parent pair reveals only the aspect supported by specimen evidence");
+            data.record(player, order.getLast(), catalog);
+            discoveries = discovered(data.snapshot(player, List.of(), catalog));
+            test.assertTrue(discoveries.containsAll(List.of(mortuus, venenum)), "Independent evidence reveals both aspects");
+            test.assertValueEqual(data.record(player, order.getLast(), catalog), AspectDiscoveryData.ScanResult.REPEAT,
+                "Repeating either source does not grant progress");
         }
         test.succeed();
     }
@@ -233,13 +275,91 @@ public class FieldObservationGameTest implements FabricGameTest {
         test.assertTrue(migrated.unlocked(), "Legacy research remains unlocked");
         test.assertValueEqual(migrated.observations(), expected, "Legacy journal observations");
         test.assertValueEqual(specimens(migrated), List.of("block:torch", "block:stone"), "Migrated specimen order");
-        test.assertValueEqual(discovered(migrated), List.of("ember", "grain"), "Migrated aspect discoveries");
+        test.assertValueEqual(Set.copyOf(discovered(migrated)), Set.of(id("ignis"), id("ordo"), id("terra")),
+            "Migrated aspect discoveries");
         var importedFromDisk = new AspectDiscoveryData().snapshot(player.getUUID(), restored.getObservations(player.getUUID()),
             AspectCatalog.current());
         test.assertValueEqual(importedFromDisk, migrated, "Legacy disk data produces the same migrated journal");
         test.assertValueEqual(ResearchJournalItem.snapshot(player), migrated, "Legacy import is idempotent");
         test.assertValueEqual(legacy.getObservations(player.getUUID()), expected, "Import preserves legacy observations");
         test.succeed();
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE)
+    public void migratesPrototypeKnowledgeAcrossReloads(GameTestHelper test) throws Exception {
+        var level = test.getLevel();
+        var registries = level.registryAccess();
+        var catalog = AspectCatalog.current();
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        var stone = new Specimen("block", vanilla("stone"));
+        var feather = new Specimen("item", vanilla("feather"));
+        var removed = new Specimen("item", ThaumicLegacy.id("removed_specimen"));
+        List<String> firstOldIds = List.of("ember", "grain", "lattice", "flint", "other:retired");
+        List<String> secondOldIds = List.of("vapor", "pulse");
+
+        var root = new CompoundTag();
+        var players = new ListTag();
+        players.add(prototypePlayer(first, List.of(stone, feather, removed), firstOldIds));
+        players.add(prototypePlayer(second, List.of(), secondOldIds));
+        root.put("players", players);
+
+        var path = level.getServer().getWorldPath(LevelResource.ROOT).resolve("data").resolve("prototype-aspects-fixture.dat");
+        Files.createDirectories(path.getParent());
+        NbtIo.writeCompressed(root, path);
+        var migrated = AspectDiscoveryData.load(NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap()), registries);
+        var firstLegacy = List.of(vanilla("stone"));
+        var firstSnapshot = migrated.snapshot(first, firstLegacy, catalog);
+        var secondSnapshot = migrated.snapshot(second, List.of(), catalog);
+        test.assertTrue(firstSnapshot.unlocked(), "Prototype research stays unlocked");
+        test.assertValueEqual(firstSnapshot.observations(), firstLegacy, "Original observations are preserved");
+        test.assertValueEqual(specimens(firstSnapshot), List.of("block:stone", "item:feather", "item:removed_specimen"),
+            "All typed observations retain their order, including a retired profile");
+        test.assertValueEqual(Set.copyOf(discovered(firstSnapshot)), Set.of(id("aer"), id("ignis"), id("ordo"), id("terra")),
+            "Prototype fire transfers directly; the other discoveries require current evidence");
+        test.assertTrue(!secondSnapshot.unlocked() && secondSnapshot.discovered().isEmpty(),
+            "Ambiguous discoveries stay archived and progress remains per player");
+        test.assertValueEqual(migrated.record(first, feather, catalog), AspectDiscoveryData.ScanResult.REPEAT,
+            "Repeat scanning after migration cannot grant a reward");
+        test.assertValueEqual(migrated.record(first, removed, catalog), AspectDiscoveryData.ScanResult.REPEAT,
+            "Removed specimen still cannot be recorded twice");
+
+        var afterMigration = migrated.save(new CompoundTag(), registries);
+        test.assertValueEqual(afterMigration.getInt("version"), 1, "Save schema version");
+        test.assertValueEqual(archivedIds(afterMigration, first), firstOldIds, "First player's prototype archive");
+        test.assertValueEqual(archivedIds(afterMigration, second), secondOldIds, "Second player's prototype archive");
+        migrated.migrate(catalog);
+        test.assertValueEqual(migrated.save(new CompoundTag(), registries), afterMigration, "Reapplying migration is a no-op");
+
+        NbtIo.writeCompressed(afterMigration, path);
+        var reloaded = AspectDiscoveryData.load(NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap()), registries);
+        test.assertValueEqual(reloaded.snapshot(first, firstLegacy, catalog), firstSnapshot, "Migrated research survives disk reload");
+        test.assertValueEqual(reloaded.snapshot(second, List.of(), catalog), secondSnapshot, "Isolated progress survives disk reload");
+        test.assertValueEqual(reloaded.save(new CompoundTag(), registries), afterMigration, "Reload preserves both archives and IDs");
+        test.succeed();
+    }
+
+    private static CompoundTag prototypePlayer(UUID player, List<Specimen> observations, List<String> discoveries) {
+        var entry = new CompoundTag();
+        entry.putUUID("uuid", player);
+        var specimens = new ListTag();
+        for (Specimen observation : observations) {
+            var specimen = new CompoundTag();
+            specimen.putString("kind", observation.kind());
+            specimen.putString("id", observation.id().toString());
+            specimens.add(specimen);
+        }
+        entry.put("specimens", specimens);
+        var known = new ListTag();
+        discoveries.forEach(discovery -> known.add(StringTag.valueOf(discovery)));
+        entry.put("known", known);
+        return entry;
+    }
+
+    private static List<String> archivedIds(CompoundTag root, UUID player) {
+        var players = root.getList("players", Tag.TAG_COMPOUND);
+        return players.stream().map(CompoundTag.class::cast).filter(entry -> entry.getUUID("uuid").equals(player))
+            .findFirst().orElseThrow().getList("archived_known", Tag.TAG_STRING).stream().map(Tag::getAsString).toList();
     }
 
     private static DimensionDataStorage saveAndOpenStorage(GameTestHelper test) {
@@ -268,6 +388,10 @@ public class FieldObservationGameTest implements FabricGameTest {
 
     private static ResourceLocation vanilla(String path) {
         return ResourceLocation.withDefaultNamespace(path);
+    }
+
+    private static String id(String path) {
+        return ThaumicLegacy.id(path).toString();
     }
 
     private static void checkObservations(GameTestHelper test, ObservationData data, ServerPlayer player,

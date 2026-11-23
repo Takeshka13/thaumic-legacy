@@ -99,7 +99,7 @@ final class AspectCatalogLoader {
 		if (!COLOR.matcher(color).matches()) {
 			throw new JsonSyntaxException("Expected color in #RRGGBB format for aspect '" + id + "'");
 		}
-		int glyph = readInt(entry.get("glyph"), "glyph", 0, 47);
+		int glyph = readInt(entry.get("glyph"), "glyph", 0, AspectCatalog.MAX_GLYPH_INDEX);
 		return new AspectDefinition(id, parents, Integer.parseInt(color.substring(1), 16), glyph);
 	}
 
@@ -127,11 +127,14 @@ final class AspectCatalogLoader {
 		}
 		Map<String, Integer> aspects = new HashMap<>();
 		profile.entrySet().forEach(amount -> {
-			String id = amount.getKey();
+			String id = readAspectId(amount.getKey());
 			if (!definitions.containsKey(id)) {
 				throw new JsonSyntaxException("Assignment references unknown aspect '" + id + "'");
 			}
-			aspects.put(id, readInt(amount.getValue(), "amount for '" + id + "'", 1, Integer.MAX_VALUE));
+			int value = readInt(amount.getValue(), "amount for '" + id + "'", 1, Integer.MAX_VALUE);
+			if (aspects.putIfAbsent(id, value) != null) {
+				throw new JsonSyntaxException("Assignment lists aspect '" + id + "' more than once");
+			}
 		});
 		return Map.copyOf(aspects);
 	}
@@ -142,7 +145,7 @@ final class AspectCatalogLoader {
 		ArrayDeque<String> resolved = new ArrayDeque<>();
 		for (AspectDefinition definition : definitions.values()) {
 			String id = definition.id();
-			if (definition.parents().isEmpty()) {
+			if (definition.category() == AspectDefinition.Category.PRIMARY) {
 				resolved.addLast(id);
 				continue;
 			}
@@ -180,11 +183,11 @@ final class AspectCatalogLoader {
 	}
 
 	private static String readAspectId(String id) {
-		ResourceLocation location = ResourceLocation.tryParse(id);
-		if (id.length() > AspectCatalog.MAX_ID_LENGTH || id.startsWith(":") || location == null || location.getPath().isEmpty()) {
+		String normalized = AspectCatalog.normalizeId(id);
+		if (normalized == null) {
 			throw new JsonSyntaxException("Invalid aspect ID '" + id + "'");
 		}
-		return id;
+		return normalized;
 	}
 
 	private static String readString(JsonElement value, String field) {

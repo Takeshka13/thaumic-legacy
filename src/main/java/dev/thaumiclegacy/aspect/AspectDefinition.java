@@ -6,4 +6,10 @@ public record AspectDefinition(String id, List<String> parents, int color, int g
 	public AspectDefinition {
 		parents = List.copyOf(parents);
 	}
+
+	public Category category() {
+		return parents.isEmpty() ? Category.PRIMARY : Category.COMPOUND;
+	}
+
+	public enum Category { PRIMARY, COMPOUND }
 }

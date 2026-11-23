@@ -11,6 +11,7 @@
 | D-005 | Use JDK 21 in CI and for local build and runtime verification. | The CI workflow selects JDK 21, local builds run with JDK 21, and Java compilation uses release 21. |
 | D-006 | Prioritize interconnected magic gameplay. | Study Thaumcraft 6 for historical context. Design original mechanics, recipes, progression, text, artwork, models, audio, and presentation. Describe Thaumic Legacy publicly as an independent project. |
 | D-007 | Start with one complete field observation loop. | Use existing vanilla targets to test data, persistent player knowledge, synchronization, and journal UX before building resource simulation. |
+| D-008 | Use Thaumcraft 6 aspect formulas as the baseline and retain compatible earlier aspect formulas. | Aspect identity is namespaced and independent of its unordered parent pair. This allows Mortuus and Venenum to retain the same pair from their respective historical catalogs. Research discovers each through specimen evidence. Any future system that combines ingredients must identify its intended result explicitly. |
 
 ## Project Foundation verification
 

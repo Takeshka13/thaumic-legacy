@@ -15,6 +15,7 @@ import java.util.Map;
 public final class AspectCatalog {
 	public static final int MAX_ID_LENGTH = 128;
 	public static final int MAX_PROFILE_SIZE = 16;
+	static final int MAX_GLYPH_INDEX = 51;
 	private static volatile AspectCatalog current = new AspectCatalog(Map.of(), Map.of());
 
 	private final Map<String, AspectDefinition> definitions;
@@ -43,6 +44,17 @@ public final class AspectCatalog {
 
 	public Map<String, AspectDefinition> definitions() {
 		return definitions;
+	}
+
+	/** Legacy shorthand uses the mod namespace; qualified identifiers retain their namespace. */
+	public static String normalizeId(String id) {
+		String qualified = id.indexOf(':') < 0 ? ThaumicLegacy.MOD_ID + ":" + id : id;
+		ResourceLocation location = ResourceLocation.tryParse(qualified);
+		if (qualified.length() > MAX_ID_LENGTH || location == null || location.getPath().isEmpty()
+				|| !qualified.equals(location.toString())) {
+			return null;
+		}
+		return qualified;
 	}
 
 	record Target(String kind, ResourceLocation id) {

@@ -163,7 +163,8 @@ public final class FieldLensItem extends Item {
 			return;
 		}
 		int legacyCount = legacy == null ? 0 : oldData.recordObservation(uuid, legacy);
-		if (result.state() != AspectDiscoveryData.State.NEW && legacyCount == 0) {
+		if (result.state() == AspectDiscoveryData.State.REPEAT
+				|| (result.state() == AspectDiscoveryData.State.UNSUPPORTED && legacyCount == 0)) {
 			player.displayClientMessage(Component.translatable("message.thaumiclegacy.already_observed"), true);
 			return;
 		}

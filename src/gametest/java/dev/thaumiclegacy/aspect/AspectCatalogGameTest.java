@@ -35,21 +35,28 @@ public class AspectCatalogGameTest implements FabricGameTest {
     public void loadsBundledAspectCatalog(GameTestHelper test) {
         var catalog = AspectCatalog.current();
         var definitions = catalog.definitions();
-        test.assertValueEqual(definitions.size(), 48, "Aspect count");
+        test.assertValueEqual(definitions.size(), 52, "Aspect count");
         var primals = definitions.values().stream().filter(aspect -> aspect.parents().isEmpty())
             .map(AspectDefinition::id).collect(Collectors.toSet());
-        test.assertValueEqual(primals, Set.of("grain", "ember", "current", "vapor", "pulse", "lattice"), "Primal aspects");
+        test.assertValueEqual(primals, Set.of(id("aer"), id("aqua"), id("ignis"), id("terra"), id("ordo"),
+            id("perditio")), "Primal aspects");
         var glyphs = definitions.values().stream().map(AspectDefinition::glyph).collect(Collectors.toSet());
-        test.assertValueEqual(glyphs, IntStream.range(0, 48).boxed().collect(Collectors.toSet()), "Aspect glyph indices");
-        test.assertValueEqual(definitions.get("alloy").parents(), List.of("flint", "ember"), "Compound parents");
+        test.assertValueEqual(glyphs, IntStream.range(0, 52).boxed().collect(Collectors.toSet()), "Aspect glyph indices");
+        test.assertValueEqual(Set.copyOf(definitions.get(id("metallum")).parents()), Set.of(id("ordo"), id("terra")),
+            "Thaumcraft 6 formula takes precedence");
+        test.assertValueEqual(Set.copyOf(definitions.get(id("arbor")).parents()), Set.of(id("aer"), id("herba")),
+            "Thaumcraft 4 extension retains its formula");
+        var mortalityAndPoison = Set.of(id("aqua"), id("perditio"));
+        test.assertValueEqual(Set.copyOf(definitions.get(id("mortuus")).parents()), mortalityAndPoison, "Mortuus formula");
+        test.assertValueEqual(Set.copyOf(definitions.get(id("venenum")).parents()), mortalityAndPoison, "Venenum formula");
 
         checkAssignmentCount(test, catalog, "block", BuiltInRegistries.BLOCK, 44);
         checkAssignmentCount(test, catalog, "item", BuiltInRegistries.ITEM, 33);
         checkAssignmentCount(test, catalog, "entity", BuiltInRegistries.ENTITY_TYPE, 21);
-        test.assertValueEqual(catalog.aspects("block", vanilla("stone")), Map.of("grain", 3, "flint", 1), "Stone profile");
-        test.assertValueEqual(catalog.aspects("item", vanilla("copper_ingot")), Map.of("alloy", 2, "temper", 1),
+        test.assertValueEqual(catalog.aspects("block", vanilla("stone")), Map.of(id("terra"), 4, id("ordo"), 1), "Stone profile");
+        test.assertValueEqual(catalog.aspects("item", vanilla("copper_ingot")), Map.of(id("metallum"), 3, id("permutatio"), 1),
             "Copper ingot profile");
-        test.assertValueEqual(catalog.aspects("entity", vanilla("cow")), Map.of("pulse", 2, "current", 1, "mantle", 2),
+        test.assertValueEqual(catalog.aspects("entity", vanilla("cow")), Map.of(id("bestia"), 3, id("corpus"), 2),
             "Cow profile");
         test.assertTrue(catalog.aspects("item", vanilla("cow")).isEmpty(), "Assignments distinguish registry kinds");
         test.succeed();
@@ -58,17 +65,17 @@ public class AspectCatalogGameTest implements FabricGameTest {
     @GameTest(template = EMPTY_STRUCTURE)
     public void rejectsInvalidAspectCatalogs(GameTestHelper test) {
         String primal = definition("primal", "[]");
-        assertInvalid(test, "unknown parent 'missing'", aspects(primal, definition("first", "[\"primal\",\"missing\"]")));
+        assertInvalid(test, "unknown parent 'thaumiclegacy:missing'", aspects(primal, definition("first", "[\"primal\",\"missing\"]")));
         assertInvalid(test, "parent cycle", aspects(primal, definition("first", "[\"primal\",\"second\"]"),
             definition("second", "[\"primal\",\"first\"]")));
-        assertInvalid(test, "Duplicate entry 'primal'", aspects(primal, primal));
+        assertInvalid(test, "Duplicate entry 'thaumiclegacy:primal'", aspects(primal, definition(id("primal"), "[]")));
         assertInvalid(test, "zero or two parents", aspects(primal, definition("first", "[\"primal\"]")));
         assertInvalid(test, "two distinct parents", aspects(primal, definition("first", "[\"primal\",\"primal\"]")));
 
         String zero = """
             {"assignments":[{"kind":"block","target":"minecraft:stone","aspects":{"primal":0}}]}
             """;
-        assertInvalid(test, "amount for 'primal'", Map.of(DEFINITIONS, aspects(primal), ASSIGNMENTS, zero));
+        assertInvalid(test, "amount for 'thaumiclegacy:primal'", Map.of(DEFINITIONS, aspects(primal), ASSIGNMENTS, zero));
         String empty = """
             {"assignments":[{"kind":"block","target":"minecraft:stone","aspects":{}}]}
             """;
@@ -76,7 +83,11 @@ public class AspectCatalogGameTest implements FabricGameTest {
         String unknownAspect = """
             {"assignments":[{"kind":"item","target":"minecraft:stick","aspects":{"missing":1}}]}
             """;
-        assertInvalid(test, "unknown aspect 'missing'", Map.of(DEFINITIONS, aspects(primal), ASSIGNMENTS, unknownAspect));
+        assertInvalid(test, "unknown aspect 'thaumiclegacy:missing'", Map.of(DEFINITIONS, aspects(primal), ASSIGNMENTS, unknownAspect));
+        String aliasDuplicate = """
+            {"assignments":[{"kind":"item","target":"minecraft:stick","aspects":{"primal":1,"thaumiclegacy:primal":2}}]}
+            """;
+        assertInvalid(test, "more than once", Map.of(DEFINITIONS, aspects(primal), ASSIGNMENTS, aliasDuplicate));
         String unknownTarget = """
             {"assignments":[{"kind":"entity","target":"minecraft:stick","aspects":{"primal":1}}]}
             """;
@@ -92,6 +103,10 @@ public class AspectCatalogGameTest implements FabricGameTest {
 
     private static ResourceLocation vanilla(String path) {
         return ResourceLocation.withDefaultNamespace(path);
+    }
+
+    private static String id(String path) {
+        return ThaumicLegacy.id(path).toString();
     }
 
     private static String definition(String id, String parents) {

@@ -38,4 +38,4 @@ The GitHub Actions workflow selects JDK 21. Verification on a hosted GitHub runn
 
 ### Aspect Discovery extension
 
-The Field Lens and Research Journal now use 48 original aspects across 98 bundled specimen profiles. Discovery uses evidence and compound prerequisites, with separate per-player storage for the aspect layer and a compatible import of legacy observations. See [Aspect Discovery](ASPECTS.md) for controls, data conventions, and multiplayer checks.
+The Field Lens and Research Journal use 52 classic aspects across 98 bundled specimen profiles. The Thaumcraft 6 API supplies the baseline, with compatible historical extensions from Thaumcraft 4. Discovery uses evidence and compound prerequisites. Versioned per-player storage preserves earlier discoveries and observations. See [Aspect Discovery](ASPECTS.md) for controls, data conventions, and multiplayer checks.

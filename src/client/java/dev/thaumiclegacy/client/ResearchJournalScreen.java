@@ -36,6 +36,11 @@ final class ResearchJournalScreen extends Screen {
 	private int top;
 	private int panelWidth;
 	private int panelHeight;
+	private boolean showCatalog;
+	private JournalPage observationsPage;
+	private JournalPage catalogPage;
+	private Button observationsTab;
+	private Button catalogTab;
 
 	ResearchJournalScreen(JournalSnapshotPayload journal) {
 		super(Component.translatable("item.thaumiclegacy.research_journal"));
@@ -48,7 +53,16 @@ final class ResearchJournalScreen extends Screen {
 		panelHeight = Math.min(270, height - 8);
 		left = (width - panelWidth) / 2;
 		top = (height - panelHeight) / 2;
-		addRenderableWidget(new JournalPage(left + 8, top + 8, panelWidth - 24, panelHeight - 44, font, paragraphs()));
+		int tabWidth = (panelWidth - 20) / 2;
+		observationsTab = addRenderableWidget(Button.builder(Component.translatable(KEY + "tab.observations"),
+			button -> selectPage(false)).bounds(left + 8, top + 8, tabWidth, 20).build());
+		catalogTab = addRenderableWidget(Button.builder(Component.translatable(KEY + "tab.aspects"),
+			button -> selectPage(true)).bounds(left + 12 + tabWidth, top + 8, tabWidth, 20).build());
+		observationsPage = addRenderableWidget(new JournalPage(left + 8, top + 34, panelWidth - 24,
+			panelHeight - 70, font, observationParagraphs()));
+		catalogPage = addRenderableWidget(new JournalPage(left + 8, top + 34, panelWidth - 24,
+			panelHeight - 70, font, aspectParagraphs()));
+		selectPage(showCatalog);
 		int buttonWidth = Math.min(120, panelWidth - 16);
 		addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
 			.bounds((width - buttonWidth) / 2, top + panelHeight - 28, buttonWidth, 20)
@@ -68,9 +82,23 @@ final class ResearchJournalScreen extends Screen {
 		return false;
 	}
 
-	private List<Paragraph> paragraphs() {
+	private void selectPage(boolean catalog) {
+		showCatalog = catalog;
+		observationsTab.active = catalog;
+		catalogTab.active = !catalog;
+		observationsPage.visible = !catalog;
+		observationsPage.active = !catalog;
+		catalogPage.visible = catalog;
+		catalogPage.active = catalog;
+	}
+
+	private List<Paragraph> observationParagraphs() {
 		List<Paragraph> paragraphs = new ArrayList<>();
 		paragraphs.add(new Paragraph(getTitle(), ACCENT, 8));
+		String state = journal.unlocked() ? "unlocked" : "locked";
+		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".title"), ACCENT, 3));
+		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".body"), INK, 8));
+
 		Set<ResourceLocation> detailedBlocks = new HashSet<>();
 		for (SpecimenView specimen : journal.specimens()) {
 			if (specimen.kind().equalsIgnoreCase("block")) {
@@ -92,16 +120,24 @@ final class ResearchJournalScreen extends Screen {
 			addSpecimen(paragraphs, observation, "block", List.of());
 		}
 
-		String state = journal.unlocked() ? "unlocked" : "locked";
-		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".title"), ACCENT, 3));
-		paragraphs.add(new Paragraph(Component.translatable(KEY + state + ".body"), INK, 8));
+		return paragraphs;
+	}
 
+	private List<Paragraph> aspectParagraphs() {
+		List<Paragraph> paragraphs = new ArrayList<>();
 		paragraphs.add(new Paragraph(Component.translatable(KEY + "discovered", journal.discovered().size()), ACCENT, 4));
 		if (journal.discovered().isEmpty()) {
 			paragraphs.add(new Paragraph(Component.translatable(KEY + "discovered.empty"), INK, 0));
 		}
 		for (AspectView aspect : journal.discovered()) {
-			paragraphs.add(aspectParagraph(aspect, false));
+			if (aspect.parents().isEmpty()) {
+				paragraphs.add(aspectParagraph(aspect, false));
+			}
+		}
+		for (AspectView aspect : journal.discovered()) {
+			if (!aspect.parents().isEmpty()) {
+				paragraphs.add(aspectParagraph(aspect, false));
+			}
 		}
 		return paragraphs;
 	}
@@ -130,10 +166,14 @@ final class ResearchJournalScreen extends Screen {
 	private static Paragraph aspectParagraph(AspectView aspect, boolean showAmount) {
 		boolean known = !aspect.id().isEmpty();
 		Component name = known ? aspectName(aspect.id()) : Component.translatable(KEY + "aspect.unknown");
-		if (showAmount && aspect.amount() > 0) {
+		if (known && showAmount && aspect.amount() > 0) {
 			name = Component.translatable(KEY + "aspect.amount", name, aspect.amount());
 		}
-		if (known && aspect.parents().size() == 2) {
+		if (known && !showAmount && aspect.parents().isEmpty()) {
+			name = Component.translatable(KEY + "aspect.primary", name);
+		}
+		if (known && !showAmount && aspect.parents().size() == 2
+			&& aspect.parents().stream().noneMatch(String::isEmpty)) {
 			name = Component.translatable(KEY + "aspect.formula", name,
 				aspectName(aspect.parents().getFirst()), aspectName(aspect.parents().getLast()));
 		}
@@ -141,7 +181,9 @@ final class ResearchJournalScreen extends Screen {
 	}
 
 	private static Component aspectName(String id) {
-		return Component.translatableWithFallback("aspect.thaumiclegacy." + id, id);
+		ResourceLocation key = id.contains(":") ? ResourceLocation.tryParse(id) : null;
+		return key == null ? Component.translatableWithFallback("aspect.thaumiclegacy." + id, id)
+			: Component.translatableWithFallback(key.toLanguageKey("aspect"), key.getPath());
 	}
 
 	private record Paragraph(Component text, int color, int spacing, AspectView aspect) {
