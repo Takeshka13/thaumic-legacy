@@ -13,7 +13,8 @@
       "dev.thaumiclegacy.wand.WandGameTest",
       "dev.thaumiclegacy.node.AuraNodeGameTest",
       "dev.thaumiclegacy.logistics.EssentiaLogisticsGameTest",
-      "dev.thaumiclegacy.transport.EssentiaTransportGameTest"
+      "dev.thaumiclegacy.transport.EssentiaTransportGameTest",
+      "dev.thaumiclegacy.advanced.AdvancedAlchemyGameTest"
     ]
   },
   "depends": {

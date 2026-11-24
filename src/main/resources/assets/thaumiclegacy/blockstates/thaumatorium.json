@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "working=false": {
+      "model": "thaumiclegacy:block/thaumatorium"
+    },
+    "working=true": {
+      "model": "thaumiclegacy:block/thaumatorium_working"
+    }
+  }
+}

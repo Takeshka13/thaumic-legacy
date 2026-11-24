@@ -24,7 +24,10 @@ final class TransportOverlay {
 	private static final String KEY = "hud.thaumiclegacy.transport.";
 	private static final ResourceLocation GOGGLES = ThaumicLegacy.id("goggles_of_revealing");
 	private static final ResourceLocation FILTER = ThaumicLegacy.id("essentia_filter");
-	private static final Set<ResourceLocation> STORAGE = Set.of(ThaumicLegacy.id("arcane_alembic"), ThaumicLegacy.id("warded_jar"));
+	private static final ResourceLocation WARDED_JAR = ThaumicLegacy.id("warded_jar");
+	private static final Set<ResourceLocation> STORAGE = Set.of(ThaumicLegacy.id("arcane_alembic"), WARDED_JAR);
+	private static final Set<ResourceLocation> PARTS = Set.of(ThaumicLegacy.id("essentia_tube"),
+			ThaumicLegacy.id("essentia_valve"), FILTER);
 	private static final int FRAME = 0xFF9E7450;
 	private static final int BACKGROUND = 0xEC1D191D;
 	private static final int TEXT = 0xFFE1D4BB;
@@ -85,12 +88,15 @@ final class TransportOverlay {
 		if (block.equals(FILTER)) {
 			lines.add(Component.translatable(KEY + "filter", aspect(reading.filter())));
 		}
+		if (block.equals(WARDED_JAR)) {
+			lines.add(Component.translatable(KEY + "jar_label", aspect(reading.filter())));
+		}
 		if (STORAGE.contains(block)) {
 			lines.add(Component.translatable(KEY + "stored_amount", reading.amount()));
 			Component contents = reading.amount() > 0 && reading.aspect().isEmpty()
 				? Component.translatable(KEY + "mixed") : aspect(reading.aspect());
 			lines.add(Component.translatable(KEY + "stored_aspect", contents));
-		} else {
+		} else if (PARTS.contains(block)) {
 			lines.add(Component.translatable(KEY + "buffer"));
 			lines.add(Component.translatable(KEY + "recent_amount", reading.amount()));
 			lines.add(Component.translatable(KEY + "last_aspect", aspect(reading.aspect())));

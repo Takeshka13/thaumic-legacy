@@ -1,0 +1,31 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " L ",
+    "RCR",
+    "AFA"
+  ],
+  "key": {
+    "L": {
+      "item": "thaumiclegacy:attuned_lens"
+    },
+    "R": {
+      "item": "thaumiclegacy:resonant_copper"
+    },
+    "C": {
+      "item": "thaumiclegacy:crucible"
+    },
+    "A": {
+      "item": "thaumiclegacy:essentia_valve"
+    },
+    "F": {
+      "item": "thaumiclegacy:alchemical_furnace"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:thaumatorium",
+    "count": 1
+  },
+  "vis_cost": 32,
+  "research": "thaumiclegacy:automated_alchemy"
+}

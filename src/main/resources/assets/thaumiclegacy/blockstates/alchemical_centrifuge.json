@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "working=false": {
+      "model": "thaumiclegacy:block/alchemical_centrifuge"
+    },
+    "working=true": {
+      "model": "thaumiclegacy:block/alchemical_centrifuge_working"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " C ",
+    "TAT",
+    " R "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "T": {
+      "item": "thaumiclegacy:essentia_tube"
+    },
+    "A": {
+      "item": "thaumiclegacy:arcane_alembic"
+    },
+    "R": {
+      "item": "thaumiclegacy:resonant_copper"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:alchemical_centrifuge",
+    "count": 1
+  },
+  "vis_cost": 24,
+  "research": "thaumiclegacy:alchemical_centrifuge"
+}

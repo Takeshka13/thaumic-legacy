@@ -18,10 +18,14 @@ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 	public static final int DURATION = 100;
+	public static final int MAX_ALEMBICS = 4;
 	private ItemStack input = ItemStack.EMPTY;
 	private ItemStack fuel = ItemStack.EMPTY;
 	private ItemStack inputRemainder = ItemStack.EMPTY;
@@ -58,10 +62,10 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 		}
 	}
 
-	private boolean distill(EssentiaStorageBlockEntity alembic) {
+	private boolean distill(List<EssentiaStorageBlockEntity> alembics) {
 		boolean finished = progress + 1 >= DURATION;
 		// The complete batch must fit before anything is spent on the final tick.
-		if (finished && !alembic.offer(currentProfile())) {
+		if (finished && !distribute(alembics, currentProfile())) {
 			return false;
 		}
 		if (burnTicks == 0) {
@@ -82,18 +86,18 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 		return true;
 	}
 
-	private FurnaceState state(EssentiaStorageBlockEntity alembic) {
+	private FurnaceState state(List<EssentiaStorageBlockEntity> alembics) {
 		if (input.isEmpty()) {
 			return FurnaceState.IDLE;
 		}
 		var profile = currentProfile();
-		if (profile.isEmpty() || units(profile) > EssentiaStorageBlockEntity.CAPACITY) {
+		if (profile.isEmpty() || units(profile) > MAX_ALEMBICS * EssentiaStorageBlockEntity.CAPACITY) {
 			return FurnaceState.INVALID_INPUT;
 		}
-		if (alembic == null) {
+		if (alembics.isEmpty()) {
 			return FurnaceState.NO_ALEMBIC;
 		}
-		if (!alembic.canAccept(profile)) {
+		if (units(profile) > alembics.stream().mapToInt(EssentiaStorageBlockEntity::freeCapacity).sum()) {
 			return FurnaceState.ALEMBIC_FULL;
 		}
 		if (!fits(inputRemainder, remainder(input))) {
@@ -110,15 +114,51 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 		return FurnaceState.DISTILLING;
 	}
 
-	private EssentiaStorageBlockEntity output(ServerLevel server) {
+	private List<EssentiaStorageBlockEntity> output(ServerLevel server) {
 		if (input.isEmpty()) {
-			return null;
+			return List.of();
 		}
-		BlockPos above = worldPosition.above();
-		// Directly above this attached furnace is always in the same chunk column.
-		return server.getBlockState(above).is(EssentiaLogistics.ARCANE_ALEMBIC)
-				&& server.getBlockEntity(above) instanceof EssentiaStorageBlockEntity storage && !storage.isRemoved()
-				? storage : null;
+		var result = new ArrayList<EssentiaStorageBlockEntity>(MAX_ALEMBICS);
+		for (int height = 1; height <= MAX_ALEMBICS; height++) {
+			BlockPos above = worldPosition.above(height);
+			if (!server.getBlockState(above).is(EssentiaLogistics.ARCANE_ALEMBIC)
+					|| !(server.getBlockEntity(above) instanceof EssentiaStorageBlockEntity storage) || storage.isRemoved()) {
+				break;
+			}
+			result.add(storage);
+		}
+		return result;
+	}
+
+	private static boolean distribute(List<EssentiaStorageBlockEntity> alembics, Map<String, Integer> profile) {
+		var remaining = new java.util.TreeMap<>(profile);
+		var plan = new LinkedHashMap<EssentiaStorageBlockEntity, Map<String, Integer>>();
+		for (var storage : alembics) {
+			int room = storage.freeCapacity();
+			var share = new LinkedHashMap<String, Integer>();
+			var entries = remaining.entrySet().iterator();
+			while (entries.hasNext() && room > 0) {
+				var entry = entries.next();
+				int amount = Math.min(room, entry.getValue());
+				share.put(entry.getKey(), amount);
+				room -= amount;
+				if (amount == entry.getValue()) {
+					entries.remove();
+				} else {
+					entry.setValue(entry.getValue() - amount);
+				}
+			}
+			if (!share.isEmpty()) {
+				plan.put(storage, share);
+			}
+		}
+		if (!remaining.isEmpty() || plan.entrySet().stream().anyMatch(entry -> !entry.getKey().canAccept(entry.getValue()))) {
+			return false;
+		}
+		// Validate the entire allocation before changing any target. Publish dirty flags after writing every ledger.
+		plan.forEach(EssentiaStorageBlockEntity::applyBatch);
+		plan.keySet().forEach(EssentiaStorageBlockEntity::setChanged);
+		return true;
 	}
 
 	boolean interact(ServerPlayer player, InteractionHand hand) {
@@ -152,7 +192,7 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 		if (profile.isEmpty()) {
 			return EssentiaLogistics.feedback(player, false, "needs_profile");
 		}
-		if (units(profile) > EssentiaStorageBlockEntity.CAPACITY) {
+		if (units(profile) > MAX_ALEMBICS * EssentiaStorageBlockEntity.CAPACITY) {
 			return EssentiaLogistics.feedback(player, false, "profile_too_large");
 		}
 		input = takeOne(player, hand, held);

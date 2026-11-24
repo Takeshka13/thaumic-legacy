@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.thaumiclegacy.ThaumicLegacy;
+import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.CategoryView;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.EntryView;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.ResearchView;
@@ -92,7 +93,7 @@ final class ResearchCatalog {
 				}
 				for (Entry entry : bundle.entries) {
 					require(entries.putIfAbsent(entry.id, entry) == null, "Duplicate research " + entry.id);
-					require(GATES.contains(entry.gate), "Unknown research trigger " + entry.gate);
+					require(validGate(entry.gate), "Unknown research trigger " + entry.gate);
 					require(entry.parents.size() <= 16 && Set.copyOf(entry.parents).size() == entry.parents.size()
 							&& entry.translation.length() <= 140, "Invalid research entry " + entry.id);
 				}
@@ -131,6 +132,17 @@ final class ResearchCatalog {
 		if (!condition) {
 			throw new IllegalArgumentException(message);
 		}
+	}
+
+	private static boolean validGate(String gate) {
+		if (GATES.contains(gate)) {
+			return true;
+		}
+		if (!gate.startsWith("aspect:")) {
+			return false;
+		}
+		String aspect = gate.substring("aspect:".length());
+		return aspect.equals(AspectCatalog.normalizeId(aspect));
 	}
 
 	private record Category(ResourceLocation id, String title, int order) {

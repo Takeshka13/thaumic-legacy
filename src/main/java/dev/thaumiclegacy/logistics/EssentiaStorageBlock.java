@@ -40,7 +40,7 @@ final class EssentiaStorageBlock extends EssentiaMachineBlock {
 
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-		return level instanceof ServerLevel && state.is(EssentiaLogistics.ARCANE_ALEMBIC)
+		return level instanceof ServerLevel
 				? createTickerHelper(type, EssentiaLogistics.STORAGE_ENTITY, EssentiaTransport::tick) : null;
 	}
 }

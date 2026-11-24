@@ -214,6 +214,34 @@ public class EssentiaTransportGameTest implements FabricGameTest {
         use(owner, filterPos, ItemStack.EMPTY, true);
         test.assertTrue(EssentiaTransport.read(level, filterPos).orElseThrow().filter().isEmpty(),
             "Crouch-use clears the filter");
+
+        var jarLabel = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("warded_jar_label"));
+        test.assertTrue(jarLabel != Items.AIR, "Blank jar label is registered");
+        test.assertTrue(ResearchProgress.isUnlocked(owner, ResearchProgress.WARDED_JAR_LABELS), "Warded Jars plus Vitreus qualify the label");
+        use(other, jar, new ItemStack(jarLabel), false);
+        var storage = (EssentiaStorageBlockEntity) level.getBlockEntity(jar);
+        test.assertTrue(storage.label().isEmpty() && other.getMainHandItem().is(jarLabel),
+            "An unqualified player cannot apply or spend a blank label");
+        use(owner, jar, new ItemStack(jarLabel), false);
+        test.assertValueEqual(storage.label(), TERRA, "A studied current aspect can be assigned to the jar");
+        test.assertTrue(owner.getMainHandItem().isEmpty(), "Assigning the label spends exactly one item");
+        use(owner, jar, phial(), false);
+        test.assertTrue(storage.snapshot().aspects().isEmpty(), "Draining the last unit does not erase the jar settings");
+        var registries = level.registryAccess();
+        var decoded = (EssentiaStorageBlockEntity) BlockEntity.loadStatic(jar, storage.getBlockState(),
+            storage.saveWithFullMetadata(registries), registries);
+        test.assertTrue(decoded != null && decoded != storage, "Labelled jar reloads into a fresh block entity");
+        level.setBlockEntity(decoded);
+        test.assertValueEqual(decoded.label(), TERRA, "A drained jar keeps its label on reload");
+        deposit(owner, jar, ORDO, 1);
+        test.assertTrue(decoded.snapshot().aspects().isEmpty(), "A label prevents accidental incompatible filling even when empty");
+        test.assertValueEqual(EssentiaPhial.contents(owner.getMainHandItem()), new EssentiaPhial.Contents(ORDO, 1),
+            "Rejected wrong-aspect phial retains all content");
+        use(owner, jar, ItemStack.EMPTY, true);
+        test.assertTrue(decoded.label().isEmpty(), "Removing the label reopens the empty jar to any aspect");
+        test.assertTrue(owner.getMainHandItem().is(jarLabel), "Taking off the label returns the item");
+        deposit(owner, jar, ORDO, 1);
+        test.assertValueEqual(decoded.snapshot().aspects(), Map.of(ORDO, 1), "New aspect can be stored after removing the label");
         test.succeed();
     }
 

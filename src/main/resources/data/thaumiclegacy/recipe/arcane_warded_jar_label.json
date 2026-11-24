@@ -1,0 +1,21 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " P ",
+    "PIP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "I": {
+      "item": "minecraft:ink_sac"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:warded_jar_label",
+    "count": 4
+  },
+  "vis_cost": 4,
+  "research": "thaumiclegacy:warded_jar_labels"
+}

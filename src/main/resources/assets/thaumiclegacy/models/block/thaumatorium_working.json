@@ -1,0 +1,6 @@
+{
+  "parent": "thaumiclegacy:block/thaumatorium",
+  "textures": {
+    "chamber": "thaumiclegacy:block/thaumatorium_working"
+  }
+}

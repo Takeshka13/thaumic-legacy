@@ -1,9 +1,11 @@
 package dev.thaumiclegacy.logistics;
 
+import dev.thaumiclegacy.advanced.AdvancedEssentiaPort;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.research.ResearchProgress;
 import dev.thaumiclegacy.transport.EssentiaTransport;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -16,13 +18,15 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.TreeMap;
 
-public final class EssentiaStorageBlockEntity extends BlockEntity {
+public final class EssentiaStorageBlockEntity extends BlockEntity implements AdvancedEssentiaPort {
 	public static final int CAPACITY = 64;
 	private final TreeMap<String, Integer> aspects = new TreeMap<>();
 	private int transportOrder;
 	private EssentiaTransport.Activity transportActivity;
+	private String label = "";
 
 	EssentiaStorageBlockEntity(BlockPos pos, BlockState state) {
 		super(EssentiaLogistics.STORAGE_ENTITY, pos, state);
@@ -30,6 +34,10 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 
 	public StorageView snapshot() {
 		return new StorageView(CAPACITY, Map.copyOf(aspects), singleAspect());
+	}
+
+	public boolean hasEssentia() {
+		return !aspects.isEmpty();
 	}
 
 	public int nextTransportOrder() {
@@ -44,16 +52,47 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 		transportActivity = activity;
 	}
 
-	/** Computes and applies one validated debit and credit on the same server thread. */
-	public boolean transferOneTo(EssentiaStorageBlockEntity target, String aspect) {
-		if (!(level instanceof ServerLevel server) || !server.getServer().isSameThread()
-				|| target.getLevel() != server || !attached(server) || !target.attached(server)
-				|| !getBlockState().is(EssentiaLogistics.ARCANE_ALEMBIC)
-				|| !target.getBlockState().is(EssentiaLogistics.WARDED_JAR)) {
+	public String label() {
+		return label;
+	}
+
+	@Override
+	public boolean inputPort(Direction face) {
+		return singleAspect() && face == Direction.UP;
+	}
+
+	@Override
+	public boolean outputPort(Direction face) {
+		return singleAspect() ? face == Direction.UP : face != Direction.DOWN;
+	}
+
+	@Override
+	public Map<String, Integer> transportContents(Direction face) {
+		return outputPort(face) ? snapshot().aspects() : Map.of();
+	}
+
+	@Override
+	public boolean canReceive(Direction face, String aspect) {
+		return inputPort(face) && canAccept(Map.of(aspect, 1));
+	}
+
+	@Override
+	public boolean receiveOne(Direction face, String aspect, BooleanSupplier debit) {
+		if (!attached() || !canReceive(face, aspect) || !debit.getAsBoolean()) {
+			return false;
+		}
+		aspects.merge(aspect, 1, Integer::sum);
+		setChanged();
+		return true;
+	}
+
+	@Override
+	public boolean extractOne(Direction face, String aspect) {
+		if (!attached() || !outputPort(face)) {
 			return false;
 		}
 		int source = aspects.getOrDefault(aspect, 0);
-		if (source == 0 || !target.canAccept(Map.of(aspect, 1))) {
+		if (source == 0) {
 			return false;
 		}
 		if (source == 1) {
@@ -61,14 +100,17 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 		} else {
 			aspects.put(aspect, source - 1);
 		}
-		target.aspects.merge(aspect, 1, Integer::sum);
 		setChanged();
-		target.setChanged();
 		return true;
 	}
 
-	private boolean attached(ServerLevel server) {
-		return !isRemoved() && server.hasChunkAt(worldPosition) && server.getBlockEntity(worldPosition) == this;
+	private boolean attached() {
+		return level instanceof ServerLevel server && server.getServer().isSameThread() && !isRemoved()
+				&& server.hasChunkAt(worldPosition) && server.getBlockEntity(worldPosition) == this;
+	}
+
+	int freeCapacity() {
+		return CAPACITY - total();
 	}
 
 	boolean canAccept(Map<String, Integer> batch) {
@@ -93,9 +135,13 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 		if (!canAccept(batch)) {
 			return false;
 		}
-		batch.forEach((id, amount) -> aspects.merge(id, amount, Integer::sum));
+		applyBatch(batch);
 		setChanged();
 		return true;
+	}
+
+	void applyBatch(Map<String, Integer> batch) {
+		batch.forEach((id, amount) -> aspects.merge(id, amount, Integer::sum));
 	}
 
 	boolean interact(ServerPlayer player, InteractionHand hand) {
@@ -103,7 +149,16 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 			return false;
 		}
 		ItemStack held = player.getItemInHand(hand);
+		if (singleAspect() && held.is(EssentiaLogistics.WARDED_JAR_LABEL)) {
+			return applyLabel(player, hand, held);
+		}
 		if (held.isEmpty()) {
+			if (player.isShiftKeyDown() && !label.isEmpty()) {
+				player.setItemInHand(hand, new ItemStack(EssentiaLogistics.WARDED_JAR_LABEL));
+				label = "";
+				changed(player);
+				return EssentiaLogistics.feedback(player, true, "label_removed");
+			}
 			describe(player);
 			return false;
 		}
@@ -140,6 +195,31 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 		return EssentiaLogistics.feedback(player, true, "transferred_in", EssentiaLogistics.aspectName(id), moved);
 	}
 
+	private boolean applyLabel(ServerPlayer player, InteractionHand hand, ItemStack held) {
+		if (!ResearchProgress.isUnlocked(player, ResearchProgress.WARDED_JAR_LABELS)) {
+			return EssentiaLogistics.feedback(player, false, "label_research");
+		}
+		if (!label.isEmpty()) {
+			return EssentiaLogistics.feedback(player, false, "label_already");
+		}
+		ItemStack sample = player.getItemInHand(hand == InteractionHand.MAIN_HAND ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+		var contents = EssentiaPhial.contents(sample);
+		String chosen = contents.isEmpty() ? aspects.isEmpty() ? "" : aspects.firstKey() : contents.aspect();
+		if (chosen.isEmpty()) {
+			return EssentiaLogistics.feedback(player, false, "label_needs_sample");
+		}
+		if (!matchesContents(chosen)) {
+			return EssentiaLogistics.feedback(player, false, "label_mismatch");
+		}
+		if (!ResearchProgress.knownAspects(player).contains(chosen)) {
+			return EssentiaLogistics.feedback(player, false, "label_unknown");
+		}
+		label = chosen;
+		held.shrink(1);
+		changed(player);
+		return EssentiaLogistics.feedback(player, true, "label_set", EssentiaLogistics.aspectName(label));
+	}
+
 	private void changed(ServerPlayer player) {
 		setChanged();
 		player.getInventory().setChanged();
@@ -150,7 +230,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 	}
 
 	private boolean matchesContents(String id) {
-		return aspects.isEmpty() || aspects.containsKey(id);
+		return (label.isEmpty() || label.equals(id)) && (aspects.isEmpty() || aspects.containsKey(id));
 	}
 
 	private int total() {
@@ -183,6 +263,9 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 				}
 			}
 		}
+		String savedLabel = tag.getString("label");
+		label = singleAspect() && savedLabel.equals(AspectCatalog.normalizeId(savedLabel))
+				&& (aspects.isEmpty() || aspects.containsKey(savedLabel)) ? savedLabel : "";
 	}
 
 	@Override
@@ -192,6 +275,9 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 		CompoundTag stored = new CompoundTag();
 		aspects.forEach(stored::putInt);
 		tag.put("aspects", stored);
+		if (!label.isEmpty()) {
+			tag.putString("label", label);
+		}
 	}
 
 	public record StorageView(int capacity, Map<String, Integer> aspects, boolean singleAspect) {

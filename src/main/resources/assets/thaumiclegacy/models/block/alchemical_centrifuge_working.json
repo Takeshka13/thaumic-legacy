@@ -1,0 +1,6 @@
+{
+  "parent": "thaumiclegacy:block/alchemical_centrifuge",
+  "textures": {
+    "rotor": "thaumiclegacy:block/alchemical_centrifuge_working"
+  }
+}

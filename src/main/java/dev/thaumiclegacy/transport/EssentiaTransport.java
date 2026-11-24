@@ -1,6 +1,8 @@
 package dev.thaumiclegacy.transport;
 
 import dev.thaumiclegacy.ThaumicLegacy;
+import dev.thaumiclegacy.advanced.AdvancedAlchemy;
+import dev.thaumiclegacy.advanced.AdvancedEssentiaPort;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.logistics.EssentiaLogistics;
 import dev.thaumiclegacy.logistics.EssentiaStorageBlockEntity;
@@ -117,8 +119,13 @@ public final class EssentiaTransport {
 	}
 
 	public static void tick(Level level, BlockPos pos, BlockState state, EssentiaStorageBlockEntity source) {
-		if (level instanceof ServerLevel server
-				&& Math.floorMod(server.getGameTime(), INTERVAL) == Math.floorMod(pos.asLong(), INTERVAL)) {
+		if (level instanceof ServerLevel server && source.hasEssentia()) {
+			tickSource(server, pos);
+		}
+	}
+
+	public static void tickSource(ServerLevel server, BlockPos pos) {
+		if (Math.floorMod(server.getGameTime(), INTERVAL) == Math.floorMod(pos.asLong(), INTERVAL)) {
 			tryTransfer(server, pos);
 		}
 	}
@@ -128,9 +135,12 @@ public final class EssentiaTransport {
 			return false;
 		}
 		BlockState state = loadedState(level, source);
-		return state != null && state.is(EssentiaLogistics.ARCANE_ALEMBIC)
-				&& level.getBlockEntity(source) instanceof EssentiaStorageBlockEntity storage
-				&& !storage.isRemoved() && TransportSearch.transfer(level, storage);
+		if (state == null) {
+			return false;
+		}
+		var blockEntity = level.getBlockEntity(source);
+		return blockEntity instanceof AdvancedEssentiaPort port && !blockEntity.isRemoved()
+				&& TransportSearch.transfer(level, source, state, port);
 	}
 
 	public static Optional<Reading> read(ServerLevel level, BlockPos pos) {
@@ -161,7 +171,11 @@ public final class EssentiaTransport {
 			Status status = connections == 0 ? Status.NO_CONNECTION
 					: activity != null ? activity.status() : view.singleAspect() && amount == view.capacity()
 					? Status.DESTINATION_FULL : !view.singleAspect() && amount == 0 ? Status.SOURCE_EMPTY : Status.NO_FLOW;
-			return Optional.of(new Reading(aspect, amount, connections, status, ""));
+			return Optional.of(new Reading(aspect, amount, connections, status, storage.label()));
+		}
+		if (level.getBlockEntity(pos) instanceof AdvancedEssentiaPort) {
+			int mask = connections(level, pos, state);
+			return Optional.of(new Reading("", 0, mask, mask == 0 ? Status.NO_CONNECTION : Status.NO_FLOW, ""));
 		}
 		return Optional.empty();
 	}
@@ -192,7 +206,7 @@ public final class EssentiaTransport {
 		if (state.is(EssentiaLogistics.WARDED_JAR)) {
 			return face == Direction.UP;
 		}
-		return TransportBlock.hasPort(state, face);
+		return TransportBlock.hasPort(state, face) || AdvancedAlchemy.inputPort(state, face) || AdvancedAlchemy.outputPort(state, face);
 	}
 
 	static Status localStatus(BlockState state, TransportBlockEntity transport) {

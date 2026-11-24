@@ -204,7 +204,7 @@ final class AspectDiscoveryData extends SavedData {
 		return new ResearchProgress.Evidence(firstResearchUnlocked(player, legacy), arcaneFoundationsUnlocked(player, legacy),
 				alchemyFoundationsUnlocked(player, legacy), nodes, hasLumenBrew(player),
 				progress != null && progress.jarUsed, progress != null && progress.known.contains(VITREUS),
-				progress != null && progress.tubePlaced);
+				progress != null && progress.tubePlaced, progress == null ? Set.of() : progress.known);
 	}
 
 	List<String> knownAspects(UUID player, AspectCatalog catalog) {

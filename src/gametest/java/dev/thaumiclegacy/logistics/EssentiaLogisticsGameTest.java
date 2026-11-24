@@ -148,6 +148,47 @@ public class EssentiaLogisticsGameTest implements FabricGameTest {
             }).thenSucceed();
     }
 
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 170)
+    public void spillsNoStockWhenMultipleAlembicsCannotAcceptTheFullBatch(GameTestHelper test) {
+        var fixture = new Fixture(test);
+        var player = newPlayer(test);
+        var bottom = fixture.alembicPos();
+        var upper = bottom.above();
+        placeWithItem(player, bottom, stack(EssentiaLogistics.ARCANE_ALEMBIC.asItem()));
+        placeWithItem(player, upper, stack(EssentiaLogistics.ARCANE_ALEMBIC.asItem()));
+        test.assertTrue(fixture.storage(bottom) != null && fixture.storage(upper) != null,
+            "The furnace and lower alembic accept ordinary placement from above");
+        for (int i = 0; i < 7; i++) {
+            use(player, bottom, filledPhial(ORDO, 8), false);
+        }
+        use(player, bottom, filledPhial(ORDO, 6), false);
+        for (int i = 0; i < 8; i++) {
+            use(player, upper, filledPhial(ORDO, 8), false);
+        }
+        use(player, fixture.furnacePos(), stack(Items.STONE), false);
+        use(player, fixture.furnacePos(), stack(Items.CHARCOAL), true);
+        test.runAfterDelay(12, () -> {
+            test.assertValueEqual(fixture.storage(bottom).snapshot().amount(), 62, "No partial output is committed on a full stack");
+            test.assertValueEqual(fixture.storage(upper).snapshot().amount(), 64, "A full upper alembic remains unchanged");
+            var waiting = fixture.furnace().snapshot();
+            test.assertTrue(waiting.input().is(Items.STONE) && waiting.fuel().is(Items.CHARCOAL) && waiting.progress() == 0,
+                "There is no source, fuel, or timing loss while the complete batch will not fit");
+            assertContents(test, use(player, upper, phial(), false), ORDO, 8);
+        });
+        test.startSequence().thenWaitUntil(() -> {
+            test.assertValueEqual(fixture.storage(bottom).snapshot().amount(), 64, "Lower alembic fills first");
+            test.assertValueEqual(fixture.storage(upper).snapshot().amount(), 59, "Upper alembic receives the remaining units");
+        }).thenExecute(() -> {
+            var lowerStock = fixture.storage(bottom).snapshot().aspects();
+            var upperStock = fixture.storage(upper).snapshot().aspects();
+            test.assertValueEqual(lowerStock.getOrDefault(TERRA, 0) + upperStock.getOrDefault(TERRA, 0), 4,
+                "Exactly the four stone Terra units are distributed");
+            test.assertValueEqual(lowerStock.getOrDefault(ORDO, 0) + upperStock.getOrDefault(ORDO, 0), 119,
+                "Existing Ordo and the single new unit are conserved");
+            test.assertTrue(fixture.furnace().snapshot().input().isEmpty(), "Only the completed batch consumes the input");
+        }).thenSucceed();
+    }
+
     @GameTest(template = EMPTY_STRUCTURE)
     public void retainsJarContentsWhenSavedBrokenAndPlacedAgain(GameTestHelper test) {
         var fixture = new Fixture(test);

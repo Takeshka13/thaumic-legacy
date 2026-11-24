@@ -1,11 +1,15 @@
 package dev.thaumiclegacy.transport;
 
+import dev.thaumiclegacy.advanced.AdvancedAlchemy;
+import dev.thaumiclegacy.advanced.AdvancedEssentiaPort;
 import dev.thaumiclegacy.logistics.EssentiaLogistics;
 import dev.thaumiclegacy.logistics.EssentiaStorageBlockEntity;
 import dev.thaumiclegacy.transport.EssentiaTransport.Activity;
 import dev.thaumiclegacy.transport.EssentiaTransport.Status;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;
@@ -20,23 +24,30 @@ final class TransportSearch {
 	private TransportSearch() {
 	}
 
-	static boolean transfer(ServerLevel level, EssentiaStorageBlockEntity source) {
-		var contents = source.snapshot().aspects();
+	static boolean transfer(ServerLevel level, BlockPos sourcePos, BlockState sourceState, AdvancedEssentiaPort source) {
+		var output = java.util.Arrays.stream(EssentiaTransport.DIRECTIONS).filter(source::outputPort).findFirst();
+		if (output.isEmpty()) {
+			return false;
+		}
+		var contents = source.transportContents(output.orElseThrow());
 		if (contents.isEmpty()) {
 			return false;
 		}
 		List<String> aspects = contents.keySet().stream().sorted().toList();
-		int start = Math.floorMod(source.nextTransportOrder(), aspects.size());
+		long order = source instanceof EssentiaStorageBlockEntity storage ? storage.nextTransportOrder()
+				: level.getGameTime() / EssentiaTransport.INTERVAL;
+		int start = Math.floorMod(order, aspects.size());
 		var scanned = new LinkedHashSet<TransportBlockEntity>();
 		Status failure = Status.NO_DESTINATION;
 		for (int step = 0; step < Math.min(aspects.size(), MAX_ASPECTS_PER_POLL); step++) {
 			String aspect = aspects.get((start + step) % aspects.size());
-			var search = new Search(level, aspect, scanned);
-			var path = search.find(source.getBlockPos());
-			if (path != null && source.transferOneTo(path.target, aspect)) {
+			var search = new Search(level, aspect, scanned, sourceState, source);
+			var path = search.find(sourcePos);
+			if (path != null && path.target.receiveOne(path.inputFace, aspect,
+					() -> source.extractOne(path.outputFace, aspect))) {
 				var moved = new Activity(Status.FLOWING, aspect, level.getGameTime());
-				source.noteTransport(moved);
-				path.target.noteTransport(moved);
+				note(source, moved);
+				note(path.target, moved);
 				for (var current = path.route; current.part != null; current = current.parent) {
 					current.part.note(moved);
 				}
@@ -45,7 +56,7 @@ final class TransportSearch {
 			failure = strongest(failure, search.failure);
 		}
 		var blocked = new Activity(failure, "", level.getGameTime());
-		source.noteTransport(blocked);
+		note(source, blocked);
 		for (var pipe : scanned) {
 			var previous = pipe.activity();
 			if (previous == null || previous.status() != Status.FLOWING
@@ -54,6 +65,12 @@ final class TransportSearch {
 			}
 		}
 		return false;
+	}
+
+	private static void note(AdvancedEssentiaPort port, Activity activity) {
+		if (port instanceof EssentiaStorageBlockEntity storage) {
+			storage.noteTransport(activity);
+		}
 	}
 
 	private static Status strongest(Status current, Status candidate) {
@@ -74,18 +91,23 @@ final class TransportSearch {
 		private final ServerLevel level;
 		private final String aspect;
 		private final Set<TransportBlockEntity> scanned;
+		private final BlockState sourceState;
+		private final AdvancedEssentiaPort source;
 		private Status failure = Status.NO_DESTINATION;
 
-		private Search(ServerLevel level, String aspect, Set<TransportBlockEntity> scanned) {
+		private Search(ServerLevel level, String aspect, Set<TransportBlockEntity> scanned, BlockState sourceState,
+						AdvancedEssentiaPort source) {
 			this.level = level;
 			this.aspect = aspect;
 			this.scanned = scanned;
+			this.sourceState = sourceState;
+			this.source = source;
 		}
 
 		private Path find(BlockPos start) {
 			var queue = new ArrayDeque<Step>();
 			var visited = new HashSet<BlockPos>();
-			queue.add(new Step(start, null, null, 0));
+			queue.add(new Step(start, null, null, 0, null));
 			visited.add(start);
 			while (!queue.isEmpty()) {
 				var step = queue.removeFirst();
@@ -95,7 +117,7 @@ final class TransportSearch {
 					continue;
 				}
 				for (var face : EssentiaTransport.DIRECTIONS) {
-					if (!EssentiaTransport.hasPort(state, face)) {
+					if (step.part == null ? !source.outputPort(face) : !EssentiaTransport.hasPort(state, face)) {
 						continue;
 					}
 					var neighbor = step.pos.relative(face);
@@ -110,19 +132,18 @@ final class TransportSearch {
 					if (!EssentiaTransport.hasPort(adjacent, face.getOpposite())) {
 						continue;
 					}
-					if (step.part != null && adjacent.is(EssentiaLogistics.WARDED_JAR)
-							&& level.getBlockEntity(neighbor) instanceof EssentiaStorageBlockEntity jar && !jar.isRemoved()) {
+					var entity = level.getBlockEntity(neighbor);
+					Direction input = face.getOpposite();
+					if (step.part != null && acceptsDestination(adjacent) && entity instanceof AdvancedEssentiaPort target
+							&& !entity.isRemoved() && target.inputPort(input)) {
 						visited.add(neighbor);
-						var stock = jar.snapshot();
-						if (stock.amount() >= stock.capacity()) {
-							failed(Status.DESTINATION_FULL);
-						} else if (!stock.aspects().isEmpty() && !stock.aspects().containsKey(aspect)) {
-							failed(Status.DESTINATION_INCOMPATIBLE);
-						} else {
-							return new Path(jar, step);
+						if (target.canReceive(input, aspect)) {
+							return new Path(target, step, input, step.outputFace);
 						}
+						failed(target instanceof EssentiaStorageBlockEntity storage && storage.snapshot().amount() >= storage.snapshot().capacity()
+								? Status.DESTINATION_FULL : Status.DESTINATION_INCOMPATIBLE);
 					} else if (adjacent.getBlock() instanceof TransportBlock
-							&& level.getBlockEntity(neighbor) instanceof TransportBlockEntity pipe && !pipe.isRemoved()) {
+							&& entity instanceof TransportBlockEntity pipe && !pipe.isRemoved()) {
 						if (visited.size() >= EssentiaTransport.MAX_VISITED || step.hops >= EssentiaTransport.MAX_HOPS) {
 							failed(Status.NETWORK_LIMIT);
 							continue;
@@ -135,7 +156,8 @@ final class TransportSearch {
 						} else if (!pipe.filter().isEmpty() && !pipe.filter().equals(aspect)) {
 							failed(Status.FILTER_MISMATCH);
 						} else {
-							queue.addLast(new Step(neighbor, pipe, step, step.hops + 1));
+							queue.addLast(new Step(neighbor, pipe, step, step.hops + 1,
+									step.part == null ? face : step.outputFace));
 						}
 					}
 				}
@@ -143,11 +165,18 @@ final class TransportSearch {
 			return null;
 		}
 
+		private boolean acceptsDestination(BlockState target) {
+			if (target.is(EssentiaLogistics.WARDED_JAR)) {
+				return !sourceState.is(EssentiaLogistics.WARDED_JAR);
+			}
+			return !sourceState.is(AdvancedAlchemy.ALCHEMICAL_CENTRIFUGE);
+		}
+
 		private void failed(Status reason) {
 			failure = strongest(failure, reason);
 		}
 	}
 
-	private record Step(BlockPos pos, TransportBlockEntity part, Step parent, int hops) { }
-	private record Path(EssentiaStorageBlockEntity target, Step route) { }
+	private record Step(BlockPos pos, TransportBlockEntity part, Step parent, int hops, Direction outputFace) { }
+	private record Path(AdvancedEssentiaPort target, Step route, Direction inputFace, Direction outputFace) { }
 }

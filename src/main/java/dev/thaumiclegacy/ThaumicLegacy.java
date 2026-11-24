@@ -1,5 +1,6 @@
 package dev.thaumiclegacy;
 
+import dev.thaumiclegacy.advanced.AdvancedAlchemy;
 import dev.thaumiclegacy.alchemy.Alchemy;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.AuraCommands;
@@ -71,6 +72,7 @@ public class ThaumicLegacy implements ModInitializer {
 		Alchemy.register();
 		EssentiaLogistics.register();
 		EssentiaTransport.register();
+		AdvancedAlchemy.register();
 		ResearchProgress.register();
 		AuraNodes.register();
 		RevealingSight.register(goggles);

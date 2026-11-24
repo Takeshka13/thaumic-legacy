@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -33,6 +34,8 @@ public final class EssentiaLogistics {
 			new EssentiaStorageBlock(machineProperties(SoundType.GLASS).noOcclusion()));
 	public static final EssentiaPhial ESSENTIA_PHIAL = Registry.register(BuiltInRegistries.ITEM,
 			ThaumicLegacy.id("essentia_phial"), new EssentiaPhial(new Item.Properties()));
+	public static final Item WARDED_JAR_LABEL = Registry.register(BuiltInRegistries.ITEM,
+			ThaumicLegacy.id("warded_jar_label"), new Item(new Item.Properties()));
 	public static final BlockEntityType<EssentiaFurnaceBlockEntity> FURNACE_ENTITY = Registry.register(
 			BuiltInRegistries.BLOCK_ENTITY_TYPE, ThaumicLegacy.id("alchemical_furnace"),
 			FabricBlockEntityTypeBuilder.create(EssentiaFurnaceBlockEntity::new, ALCHEMICAL_FURNACE).build());
@@ -50,11 +53,17 @@ public final class EssentiaLogistics {
 			entries.accept(WARDED_JAR);
 		});
 		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> entries.accept(ESSENTIA_PHIAL));
+		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS).register(entries -> entries.accept(WARDED_JAR_LABEL));
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			BlockPos pos = hit.getBlockPos();
-			if (player.isSpectator() || player.getItemInHand(hand).getItem() instanceof FieldLensItem
-					|| EssentiaTransport.isPartItem(player.getItemInHand(hand))
-					|| !level.hasChunkAt(pos) || !(level.getBlockState(pos).getBlock() instanceof EssentiaMachineBlock)) {
+			var held = player.getItemInHand(hand);
+			if (player.isSpectator() || held.getItem() instanceof FieldLensItem || EssentiaTransport.isPartItem(held)
+					|| !level.hasChunkAt(pos)) {
+				return InteractionResult.PASS;
+			}
+			var state = level.getBlockState(pos);
+			if (!(state.getBlock() instanceof EssentiaMachineBlock) || hit.getDirection() == Direction.UP
+					&& held.is(ARCANE_ALEMBIC.asItem()) && (state.is(ALCHEMICAL_FURNACE) || state.is(ARCANE_ALEMBIC))) {
 				return InteractionResult.PASS;
 			}
 			if (player instanceof ServerPlayer serverPlayer) {

@@ -120,6 +120,34 @@
       "translation": "screen.thaumiclegacy.journal.essentia_controls",
       "gate": "tube_placed",
       "parents": ["thaumiclegacy:essentia_transport"]
+    },
+    {
+      "id": "thaumiclegacy:warded_jar_labels",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.warded_jar_labels",
+      "gate": "aspect:thaumiclegacy:vitreus",
+      "parents": ["thaumiclegacy:warded_jars"]
+    },
+    {
+      "id": "thaumiclegacy:improved_distillation",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.improved_distillation",
+      "gate": "always",
+      "parents": ["thaumiclegacy:essentia_controls"]
+    },
+    {
+      "id": "thaumiclegacy:alchemical_centrifuge",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.alchemical_centrifuge",
+      "gate": "aspect:thaumiclegacy:motus",
+      "parents": ["thaumiclegacy:improved_distillation"]
+    },
+    {
+      "id": "thaumiclegacy:automated_alchemy",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.automated_alchemy",
+      "gate": "aspect:thaumiclegacy:potentia",
+      "parents": ["thaumiclegacy:alchemical_centrifuge", "thaumiclegacy:warded_jar_labels"]
     }
   ]
 }

@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
+import java.util.Set;
 
 /** Server-side lookup for recipe research requirements. */
 public final class ResearchProgress {
@@ -15,6 +16,10 @@ public final class ResearchProgress {
 	public static final ResourceLocation WARDED_JARS = ThaumicLegacy.id("warded_jars");
 	public static final ResourceLocation ESSENTIA_TRANSPORT = ThaumicLegacy.id("essentia_transport");
 	public static final ResourceLocation ESSENTIA_CONTROLS = ThaumicLegacy.id("essentia_controls");
+	public static final ResourceLocation WARDED_JAR_LABELS = ThaumicLegacy.id("warded_jar_labels");
+	public static final ResourceLocation IMPROVED_DISTILLATION = ThaumicLegacy.id("improved_distillation");
+	public static final ResourceLocation ALCHEMICAL_CENTRIFUGE = ThaumicLegacy.id("alchemical_centrifuge");
+	public static final ResourceLocation AUTOMATED_ALCHEMY = ThaumicLegacy.id("automated_alchemy");
 
 	private ResearchProgress() {
 	}
@@ -61,8 +66,11 @@ public final class ResearchProgress {
 	}
 
 	record Evidence(boolean comparing, boolean arcane, boolean alchemy, JournalSnapshotPayload.NodeProgress nodes,
-			boolean lumenBrew, boolean jarUsed, boolean vitreus, boolean tubePlaced) {
+			boolean lumenBrew, boolean jarUsed, boolean vitreus, boolean tubePlaced, Set<String> known) {
 		boolean satisfies(String gate) {
+			if (gate.startsWith("aspect:")) {
+				return known.contains(gate.substring("aspect:".length()));
+			}
 			return switch (gate) {
 				case "always" -> true;
 				case "comparing_specimens" -> comparing;

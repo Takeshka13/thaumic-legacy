@@ -1,6 +1,8 @@
 package dev.thaumiclegacy.revealing;
 
 import dev.thaumiclegacy.alchemy.Alchemy;
+import dev.thaumiclegacy.advanced.AlchemicalCentrifugeBlockEntity;
+import dev.thaumiclegacy.advanced.ThaumatoriumBlockEntity;
 import dev.thaumiclegacy.alchemy.CrucibleBlockEntity;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.ThaumometerItem;
@@ -108,23 +110,35 @@ public final class RevealingSight {
 			return false;
 		}
 		var entity = level.getBlockEntity(pos);
-		if (!(entity instanceof EssentiaStorageBlockEntity) && !(entity instanceof EssentiaFurnaceBlockEntity)) {
+		LogisticsReadoutPayload reading;
+		if (entity instanceof EssentiaStorageBlockEntity storage) {
+			var view = storage.snapshot();
+			reading = new LogisticsReadoutPayload(pos, worn, "storage", view.amount(), view.capacity(),
+					aspectAmounts(view.aspects()), 0, 0, 0);
+		} else if (entity instanceof EssentiaFurnaceBlockEntity furnace) {
+			var view = furnace.snapshot();
+			reading = new LogisticsReadoutPayload(pos, worn, view.state().name().toLowerCase(Locale.ROOT),
+					0, 0, List.of(), view.progress(), view.duration(), view.burnTicks());
+		} else if (entity instanceof AlchemicalCentrifugeBlockEntity centrifuge) {
+			var view = centrifuge.snapshot();
+			reading = machineReading(pos, worn, view.status().name(), view.output(), view.outputCapacity(), view.progress(), view.duration());
+		} else if (entity instanceof ThaumatoriumBlockEntity thaumatorium) {
+			var view = thaumatorium.snapshot();
+			reading = machineReading(pos, worn, view.status().name(), view.essentia(), view.capacity(), view.progress(), view.duration());
+		} else {
 			return false;
 		}
 		if (ServerPlayNetworking.canSend(player, LogisticsReadoutPayload.TYPE)) {
-			LogisticsReadoutPayload reading;
-			if (entity instanceof EssentiaStorageBlockEntity storage) {
-				var view = storage.snapshot();
-				reading = new LogisticsReadoutPayload(pos, worn, "storage", view.amount(), view.capacity(),
-						aspectAmounts(view.aspects()), 0, 0, 0);
-			} else {
-				var view = ((EssentiaFurnaceBlockEntity) entity).snapshot();
-				reading = new LogisticsReadoutPayload(pos, worn, view.state().name().toLowerCase(Locale.ROOT),
-						0, 0, List.of(), view.progress(), view.duration(), view.burnTicks());
-			}
 			ServerPlayNetworking.send(player, reading);
 		}
 		return true;
+	}
+
+	private static LogisticsReadoutPayload machineReading(BlockPos pos, boolean worn, String status, Map<String, Integer> contents,
+			int capacity, int progress, int duration) {
+		int amount = contents.values().stream().mapToInt(Integer::intValue).sum();
+		return new LogisticsReadoutPayload(pos, worn, status.toLowerCase(Locale.ROOT), amount, capacity,
+				aspectAmounts(contents), progress, duration, 0);
 	}
 
 	private static void revealFocus(ServerPlayer player, boolean worn) {
