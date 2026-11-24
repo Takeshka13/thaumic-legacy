@@ -32,52 +32,35 @@ And every great thaumaturge must learn that knowledge comes at a price.
 
 ### 🔍 Exploration & Discovery
 
-- Investigate blocks, items, creatures, and magical phenomena.
-- Discover the magical aspects hidden within the world.
-- Record observations in your personal research journal.
-- Unlock knowledge through experimentation.
+- Scan blocks, items, creatures, and aura nodes with the Thaumometer. Record observations and discover magical aspects.
+- Wear Goggles of Revealing to locate nearby aura nodes and inspect alchemical equipment.
 
 ### 🌀 Magical Aspects
 
-- A comprehensive aspect system inspired by classical Thaumcraft.
-- Primal and compound magical aspects.
-- Discoverable relationships between materials and magical properties.
-- Aspect-driven research, alchemy, and crafting.
+- Discover 52 classical primal and compound aspects. Material profiles and aspect combinations drive research and alchemy.
 
 ### 📖 Research
 
-- A personal research journal.
-- Multiple interconnected research branches.
-- Discoveries based on exploration and experimentation.
-- Meaningful progression through magical disciplines.
+- The Thaumonomicon organizes research into eight categories, with separate observation and aspect views.
+- Discoveries, prerequisites, and experiments unlock recipes and techniques for each player.
 
 ### ⚗️ Alchemy
 
-*Planned*
-
-- Extract magical essences from materials.
-- Experiment with different ingredients.
-- Store and transport magical substances.
-- Develop increasingly complex alchemical processes.
+- Brew alchemical recipes in the Crucible with dissolved materials and catalysts.
+- Distill materials with an Alchemical Furnace and up to four stacked Arcane Alembics.
+- Move essentia by phial or through Essentia Transport tubes, valves, and filters. Store it in Warded Jars and reserve an aspect with Jar Labels.
+- Split compounds into their parent aspects with the Essentia Centrifuge. Automate known alchemical recipes with the Thaumatorium.
 
 ### 🌌 Aura & Magical Consequences
 
-*Planned*
+- Measure local Aura, Vis, and Flux. Ambient Vis recovers over time, and Flux slows its recovery.
+- Discover regenerating aura nodes in newly generated Overworld chunks. Charge a Wand from their six primal Vis reserves.
 
-- Environmental magical energy.
-- Aura manipulation and regeneration.
-- Magical pollution and instability.
-- Unusual phenomena caused by dangerous experiments.
+### 🪄 Arcane Crafting & Future Thaumaturgy
 
-### 🪄 Advanced Thaumaturgy
-
-*Planned*
-
-- Magical tools and customizable spells.
-- Rituals and infusion crafting.
-- Multiblock magical structures.
-- Magical constructs and golem automation.
-- Mysterious locations, creatures, and anomalies.
+- Craft magical equipment at the Arcane Workbench using local Vis and unlocked research.
+- Upcoming work includes Magical Artifice, the Infernal Furnace, the Infusion Altar with Arcane Pedestals and a Runic Matrix, and Golemancy.
+- A visual pass will revisit graphics, models, and interfaces. Spellcasting, broader world generation, and advanced Flux consequences remain planned.
 
 ---
 
@@ -85,17 +68,20 @@ And every great thaumaturge must learn that knowledge comes at a price.
 
 | System | Status |
 |---|---|
-| Fabric 1.21.1 foundation | ✅ Implemented |
-| Field Lens | ✅ Implemented |
-| Field Observation | ✅ Implemented |
-| Research Journal | ✅ Implemented |
-| Classical Aspect System | 🚧 In development |
-| Aura and Flux | 📋 Planned |
-| Alchemy | 📋 Planned |
-| Infusion and Rituals | 📋 Planned |
-| Spellcasting | 📋 Planned |
-| Golem Automation | 📋 Planned |
-| World Generation | 📋 Planned |
+| Fabric 1.21.1 foundation and 52 classical aspects | ✅ Implemented |
+| Thaumometer scanning and Goggles of Revealing | ✅ Implemented |
+| Thaumonomicon and research | 🚧 Foundation implemented. More research branches and book refinements planned. |
+| Local Aura, Vis, and Flux | 🚧 Recovery, pollution, and remediation implemented. Balance and broader consequences remain open. |
+| Aura nodes and Wand charging | ✅ Implemented. Nodes generate in new Overworld chunks. |
+| Arcane Workbench and Crucible alchemy | ✅ Implemented |
+| Alchemical Furnace, Arcane Alembics, and stacked distillation | ✅ Implemented |
+| Warded Jars, phials, and Jar Labels | ✅ Implemented |
+| Essentia Transport | 🚧 Tubes, valves, filters, and bounded routing implemented. Suction simulation remains planned. |
+| Essentia Centrifuge and Thaumatorium | ✅ Implemented |
+| Magical Artifice and Infernal Furnace | 📋 Planned |
+| Infusion Altar, Arcane Pedestals, and Runic Matrix | 📋 Planned |
+| Golemancy and spellcasting | 📋 Planned |
+| Broader world generation, graphics, models, and interface overhaul | 📋 Planned |
 
 Development plans are documented in:
 
@@ -103,6 +89,7 @@ Development plans are documented in:
 - [Feature Matrix](docs/FEATURE_MATRIX.md)
 - [Gameplay Systems](docs/GAMEPLAY_SYSTEMS.md)
 - [Project Architecture](docs/ARCHITECTURE.md)
+- [Advanced Alchemy](docs/ADVANCED_ALCHEMY.md)
 
 ## 💻 Building from Source
 
@@ -185,7 +172,7 @@ Please check existing issues before reporting a new problem.
 
 ## 📜 License
 
-See the [LICENSE](LICENSE) file for the applicable license.
+The repository uses **CC0 1.0 Universal**. See [LICENSE](LICENSE) for the license text.
 
 Only content that we have the rights to distribute is intended to be included in this repository. Third-party content may be subject to separate terms.
 
