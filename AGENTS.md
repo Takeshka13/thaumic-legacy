@@ -23,6 +23,8 @@ Ender Dragon is the primary Codex agent and the user's point of contact. It owns
 
 ## Delegation and verification
 
+- Ender Dragon owns the task, handles simple work directly, and decides when a consultation is useful. Call `ask_freellmapi` directly with one relevant role in the prompt. **Allay** reviews translations and copy. **Witch** develops recipes and balance. **Iron Golem** reviews Java code and Fabric API usage for Minecraft 1.21.1. **Warden** analyzes build failures and GameTest results. Share only the relevant code, text, or log excerpts.
+- Verify external suggestions against the project. Ender Dragon makes edits and runs Gradle within the user's task scope. If FreeLLMAPI is unavailable, tell the user before launching any additional Codex agents.
 - Give each delegated task a purpose, file scope, deliverable, and read-only or write assignment. Agents may edit only the files explicitly assigned for writing. Assign one writer per file at a time. Ender Dragon coordinates any handoff before another agent edits that file.
 - Use the named profiles for specialized delegation when the client exposes them. Queue a second wave when available slots are full. If a profile cannot be launched, report it as unavailable.
 - Run heavy Gradle jobs serially across the team. For runtime changes, choose relevant checks and cover client and dedicated-server startup when the changed path can affect either.
