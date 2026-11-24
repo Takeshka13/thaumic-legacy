@@ -119,6 +119,28 @@ public class EssentiaTransportGameTest implements FabricGameTest {
     }
 
     @GameTest(template = EMPTY_STRUCTURE)
+    public void competingSourcesShareTheLastJarSlotWithoutOverbooking(GameTestHelper test) {
+        var line = new Line(test);
+        var secondSource = line.tube(1).north();
+        line.place(secondSource, EssentiaLogistics.ARCANE_ALEMBIC.defaultBlockState());
+        var player = newPlayer(test);
+        for (int i = 0; i < 7; i++) {
+            deposit(player, line.jar(), ORDO, 8);
+        }
+        deposit(player, line.jar(), ORDO, 7);
+        deposit(player, line.source(), ORDO, 2);
+        deposit(player, secondSource, ORDO, 2);
+
+        // Process two sources on the same server tick and through the same shared tube.
+        test.assertTrue(EssentiaTransport.tryTransfer(line.level(), line.source()), "The first source claims the available space");
+        test.assertFalse(EssentiaTransport.tryTransfer(line.level(), secondSource), "The second source sees the committed capacity");
+        test.assertValueEqual(line.stock(line.jar()), Map.of(ORDO, 64), "The shared destination never overfills");
+        test.assertValueEqual(line.stock(line.source()), Map.of(ORDO, 1), "Only the first source was debited");
+        test.assertValueEqual(line.stock(secondSource), Map.of(ORDO, 2), "The rejected source keeps every unit");
+        test.succeed();
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE)
     public void respectsTubeHopLimitsAndDoesNotLoadAnUnloadedSourceChunk(GameTestHelper test) {
         var level = test.getLevel();
         var start = test.absolutePos(new BlockPos(0, 2, 0));

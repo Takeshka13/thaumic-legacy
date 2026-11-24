@@ -201,6 +201,43 @@ public class AdvancedAlchemyGameTest implements FabricGameTest {
         });
     }
 
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 145)
+    public void resumesInFlightThaumatoriumAfterReloadAndIssuesOneResult(GameTestHelper test) {
+        var line = new Line(test, AdvancedAlchemy.THAUMATORIUM);
+        var owner = newPlayer(test);
+        trainOperator(test, owner);
+        standNear(owner, line.target());
+        test.assertTrue(line.thaumatorium().select(owner, ThaumicLegacy.id("ember_salt")), "The owner starts a known recipe");
+        use(owner, line.target(), new ItemStack(Items.REDSTONE), false);
+        line.deposit(owner, IGNIS, 4);
+        line.deposit(owner, PERDITIO, 2);
+        for (int i = 0; i < 6; i++) {
+            test.assertTrue(line.transfer(), "The alembic supplies each required unit");
+        }
+
+        test.startSequence().thenWaitUntil(() -> test.assertTrue(line.thaumatorium().snapshot().progress() >= 40,
+            "The operation has advanced before saving")).thenExecute(() -> {
+                var level = line.level();
+                var old = line.thaumatorium();
+                var saved = old.saveWithFullMetadata(level.registryAccess());
+                var loaded = (ThaumatoriumBlockEntity) BlockEntity.loadStatic(line.target(), old.getBlockState(),
+                    saved, level.registryAccess());
+                test.assertTrue(loaded != null && loaded != old, "The saved machine loads into a fresh entity");
+                level.setBlockEntity(loaded);
+                var state = loaded.snapshot();
+                test.assertValueEqual(state.progress(), old.snapshot().progress(), "Elapsed work survives serialization");
+                test.assertValueEqual(state.essentia(), Map.of(IGNIS, 4, PERDITIO, 2), "The saved inputs remain unspent");
+                test.assertTrue(state.catalyst().is(Items.REDSTONE) && state.result().isEmpty(), "Reload cannot issue a result early");
+            }).thenWaitUntil(() -> test.assertTrue(line.thaumatorium().snapshot().result().is(item("ember_salt")),
+                "The reloaded machine completes within the original work budget")).thenExecute(() -> {
+                    var state = line.thaumatorium().snapshot();
+                    test.assertValueEqual(state.result().getCount(), 1, "The resumed transaction produces a single item");
+                    test.assertTrue(state.essentia().isEmpty() && state.catalyst().isEmpty(), "The original costs are debited exactly once");
+                    test.assertTrue(use(owner, line.target(), ItemStack.EMPTY, false).is(item("ember_salt")), "The owner can collect the result");
+                    test.assertFalse(use(owner, line.target(), ItemStack.EMPTY, false).is(item("ember_salt")), "Repeated collection gives no copy");
+                }).thenSucceed();
+    }
+
     private static void trainOperator(GameTestHelper test, ServerPlayer player) {
         var level = test.getLevel();
         var stone = test.absolutePos(new BlockPos(0, 1, 2));
