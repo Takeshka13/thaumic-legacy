@@ -21,14 +21,14 @@ import dev.thaumiclegacy.transport.EssentiaTransport;
 import dev.thaumiclegacy.wand.WandItem;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.registry.FuelRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.TransparentBlock;
@@ -47,7 +47,7 @@ public class ThaumicLegacy implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		Registry.register(BuiltInRegistries.ITEM, id("field_lens"),
+		Item fieldLens = Registry.register(BuiltInRegistries.ITEM, id("field_lens"),
 				new FieldLensItem(new Item.Properties().stacksTo(1)));
 		Item researchJournal = Registry.register(BuiltInRegistries.ITEM, id("research_journal"),
 				new ResearchJournalItem(new Item.Properties().stacksTo(1)));
@@ -76,21 +76,38 @@ public class ThaumicLegacy implements ModInitializer {
 		ResearchProgress.register();
 		AuraNodes.register();
 		RevealingSight.register(goggles);
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {
-			entries.accept(researchJournal);
-			entries.accept(thaumometer);
-			entries.accept(goggles);
-			entries.accept(wand);
-			entries.accept(auraSurveyor);
-			entries.accept(cleansingSalt);
-		});
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS).register(entries -> {
-			entries.accept(resonantCopper);
-			entries.accept(attunedLens);
-			entries.accept(emberSalt);
-		});
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(entries ->
-				entries.accept(lumenGlassItem));
+		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, id("main"), FabricItemGroup.builder()
+				.title(Component.translatable("itemGroup.thaumiclegacy.main"))
+				.icon(thaumometer::getDefaultInstance)
+				.displayItems((parameters, entries) -> {
+					entries.accept(thaumometer);
+					entries.accept(researchJournal);
+					entries.accept(goggles);
+					entries.accept(wand);
+					entries.accept(auraSurveyor);
+					entries.accept(fieldLens);
+
+					entries.accept(resonantCopper);
+					entries.accept(attunedLens);
+					entries.accept(emberSalt);
+
+					entries.accept(cleansingSalt);
+					entries.accept(Alchemy.CRUCIBLE_ITEM);
+					entries.accept(EssentiaLogistics.ALCHEMICAL_FURNACE);
+					entries.accept(EssentiaLogistics.ARCANE_ALEMBIC);
+					entries.accept(EssentiaLogistics.WARDED_JAR);
+					entries.accept(EssentiaLogistics.WARDED_JAR_LABEL);
+					entries.accept(EssentiaLogistics.ESSENTIA_PHIAL);
+
+					entries.accept(EssentiaTransport.TUBE);
+					entries.accept(EssentiaTransport.VALVE);
+					entries.accept(EssentiaTransport.FILTER);
+					entries.accept(AdvancedAlchemy.ALCHEMICAL_CENTRIFUGE);
+					entries.accept(AdvancedAlchemy.THAUMATORIUM);
+
+					entries.accept(ArcaneWorkbench.ITEM);
+					entries.accept(lumenGlassItem);
+				}).build());
 		PayloadTypeRegistry.playS2C().register(JournalSnapshotPayload.TYPE, JournalSnapshotPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(ScanFeedbackPayload.TYPE, ScanFeedbackPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(AuraReadingPayload.TYPE, AuraReadingPayload.STREAM_CODEC);

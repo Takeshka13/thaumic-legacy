@@ -1,7 +1,6 @@
 package dev.thaumiclegacy.workbench;
 
 import dev.thaumiclegacy.ThaumicLegacy;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -11,7 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -45,7 +43,6 @@ public final class ArcaneWorkbench {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(entries -> entries.accept(ITEM));
 		PayloadTypeRegistry.playC2S().register(ArcaneWorkbenchCraftPayload.TYPE, ArcaneWorkbenchCraftPayload.STREAM_CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(ArcaneWorkbenchCraftPayload.TYPE, (payload, context) -> {
 			var player = context.player();

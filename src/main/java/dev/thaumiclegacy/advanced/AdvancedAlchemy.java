@@ -4,7 +4,6 @@ import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.transport.EssentiaTransport;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
@@ -14,7 +13,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -42,10 +40,6 @@ public final class AdvancedAlchemy {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(entries -> {
-			entries.accept(ALCHEMICAL_CENTRIFUGE);
-			entries.accept(THAUMATORIUM);
-		});
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			var pos = hit.getBlockPos();
 			if (player.isSpectator() || player.getItemInHand(hand).getItem() instanceof FieldLensItem

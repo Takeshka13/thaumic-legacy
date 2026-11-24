@@ -4,7 +4,6 @@ import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.transport.EssentiaTransport;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -15,7 +14,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -47,13 +45,6 @@ public final class EssentiaLogistics {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(entries -> {
-			entries.accept(ALCHEMICAL_FURNACE);
-			entries.accept(ARCANE_ALEMBIC);
-			entries.accept(WARDED_JAR);
-		});
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> entries.accept(ESSENTIA_PHIAL));
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS).register(entries -> entries.accept(WARDED_JAR_LABEL));
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			BlockPos pos = hit.getBlockPos();
 			var held = player.getItemInHand(hand);

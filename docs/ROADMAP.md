@@ -16,6 +16,7 @@ Thaumic Legacy is an independent magic mod for Minecraft 1.21.1, Fabric, and Jav
 | 5c. Advanced Alchemy | Centrifuge, Thaumatorium, jar labels, and improved distillation implemented. | 5a, 5b | Split compound essentia, retain labels, complete gated recipes through typed ports, and distribute whole batches over stacked alembics. [Advanced Alchemy](ADVANCED_ALCHEMY.md) |
 | 6. Rituals and Spellcraft | Planned | 3, 4. 5 supplies optional automation. | An original multiblock completes a ritual or fails in a readable and recoverable way. One implement casts two mechanically distinct effects. |
 | 7. Exploration and Ecology | Planned | 3, 4. Content design can start earlier. | New exploration sites, creatures, and local anomaly recovery form a repeatable loop. Existing saves retain an attainable progression route. |
+| 7a. Ancient Knowledge and the Crimson Cult | Planned | 2, 7. Dimension and boss design also needs encounter and progression rules. | Rare sites yield Thaumometer observations and unlock Ancient Knowledge. Later encounters, dimensions, and bosses follow explicit access and recovery rules. |
 | 8. Golems and Advanced Workshop | Planned | 5, 6. Optional roles can use 7. | Two construct jobs run within owner and navigation budgets, stop safely when blocked, and resume after restart. Workshops gain useful late-game upgrades. |
 | 9. Testing and Public Release | Planned | Completed features in the agreed release scope | Verify dedicated multiplayer, save upgrades, reloads, performance, access to progression, original assets, and both locales. Report verified environments and known limitations. |
 
@@ -30,6 +31,14 @@ Public API compatibility remains an architectural option. A public API release, 
 - **Infernal Furnace** is an advanced smelting structure with explicit assembly, input and output rules, and recoverable teardown.
 - **Infusion Altar** centers on a **Runic Matrix** above an **Arcane Pedestal**, with surrounding **Arcane Pedestals** for ingredients. It depends on reliable stored essentia. Its design needs typed essentia consumption during a ritual, visible stability and instability, and recoverable failure consequences such as displaced ingredients or local Flux.
 - **Golem Press** follows infusion and component crafting. Assembly consumes its inputs once, with a clear recovery path if the structure or power supply is interrupted.
+
+## Planned ancient sites and encounters
+
+- Generate rare **Eldritch Obelisks**, **Eldritch Altars**, and **Eldritch Rings** in new terrain. Use seed-based placement and spacing, and preserve existing terrain. Give each site a distinct Thaumometer observation.
+- Use those observations to unlock relevant entries in the Thaumonomicon's **Ancient Knowledge** branch. Gate forbidden research by prerequisites and make its personal **Warp** consequences visible to the player.
+- Add **Crimson Cultists**, **Crimson Clerics**, **Crimson Knights**, and **Eldritch Guardians** as distinct encounters with clear roles and controlled spawn rates. Plan ancient dimensions and bosses after the site and research loop is playable.
+
+Thaumcraft 4, 5, and 6 are historical references for this milestone. Check each feature against its original version during design. [Historical references and acceptance criteria](FEATURE_MATRIX.md#planned-ancient-knowledge)
 
 ## Project Foundation verification
 

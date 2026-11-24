@@ -5,6 +5,7 @@
   "environment": "server",
   "entrypoints": {
     "fabric-gametest": [
+      "dev.thaumiclegacy.CreativeInventoryGameTest",
       "dev.thaumiclegacy.aspect.AspectCatalogGameTest",
       "dev.thaumiclegacy.research.FieldObservationGameTest",
       "dev.thaumiclegacy.aura.AuraGameTest",

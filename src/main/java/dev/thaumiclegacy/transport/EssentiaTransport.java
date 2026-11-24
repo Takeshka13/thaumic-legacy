@@ -9,7 +9,6 @@ import dev.thaumiclegacy.logistics.EssentiaStorageBlockEntity;
 import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.research.ResearchProgress;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,7 +21,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -55,11 +53,6 @@ public final class EssentiaTransport {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(entries -> {
-			entries.accept(TUBE);
-			entries.accept(VALVE);
-			entries.accept(FILTER);
-		});
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			var pos = hit.getBlockPos();
 			if (player.isSpectator() || player.getItemInHand(hand).getItem() instanceof FieldLensItem

@@ -3,7 +3,6 @@ package dev.thaumiclegacy.alchemy;
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.aura.ThaumometerItem;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.core.Registry;
@@ -15,7 +14,6 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -64,8 +62,6 @@ public final class Alchemy {
 	}
 
 	public static void register() {
-		ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS)
-				.register(entries -> entries.accept(CRUCIBLE_ITEM));
 		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new AlchemyConfig.ReloadListener());
 		// Vanilla skips block item-use callbacks while sneaking with an item in hand.
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
