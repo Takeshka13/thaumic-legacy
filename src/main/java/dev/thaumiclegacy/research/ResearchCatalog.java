@@ -31,7 +31,8 @@ import java.util.function.Predicate;
 final class ResearchCatalog {
 	private static final int MAX_ENTRIES = 256;
 	private static final Set<String> GATES = Set.of("always", "comparing_specimens", "arcane_foundations",
-			"alchemy_foundations", "node_basics", "node_study", "wand_charging", "lumen_brew");
+			"alchemy_foundations", "node_basics", "node_study", "wand_charging", "lumen_brew",
+			"jar_use", "vitreus_discovered", "tube_placed");
 	private static volatile ResearchCatalog current = new ResearchCatalog(List.of(), List.of());
 	private final List<Category> categories;
 	private final List<Entry> entries;

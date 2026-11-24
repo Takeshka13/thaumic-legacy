@@ -12,7 +12,7 @@ Thaumic Legacy is an independent magic mod for Minecraft 1.21.1, Fabric, and Jav
 | 3a. Aura Nodes and Wand Charging | Foundation implemented. Two-client QA and balance tuning remain open. | 2, 3 | Find a naturally generated node, study it, charge a wand without moving chunk Vis, and verify node and journal state across reload. |
 | 4. Experiments and Alchemy | Alchemy Foundation complete and verified locally. | 2, 3 | Players unlock Alchemy Foundations, craft a Crucible, extract Essentia, and use catalysts. The mixture survives reloads and discarded residue affects local Flux. |
 | 5a. Essentia Logistics and Thaumonomicon | Manual distillation and categorized research foundation implemented. Two-client QA remains open. | 4 | Brew Lumen Glass to unlock an Alchemical Furnace, Arcane Alembic, and Warded Jar. Distill and transfer by phial. The Thaumonomicon preserves existing discoveries and displays available research by category. |
-| 5b. Workshop Logistics | Planned | 5a | Tubes, valves, and filters route typed essentia on a bounded network. Backpressure, unavailable endpoints, and reload preserve stored material. |
+| 5b. Essentia Transport | Bounded routing foundation implemented. Pressure simulation and multiplayer QA remain open. | 5a | Tubes, valves, and filters route typed essentia from alembics to jars. Blocked or unloaded paths preserve stored material. |
 | 6. Rituals and Spellcraft | Planned | 3, 4. 5 supplies optional automation. | An original multiblock completes a ritual or fails in a readable and recoverable way. One implement casts two mechanically distinct effects. |
 | 7. Exploration and Ecology | Planned | 3, 4. Content design can start earlier. | New exploration sites, creatures, and local anomaly recovery form a repeatable loop. Existing saves retain an attainable progression route. |
 | 8. Golems and Advanced Workshop | Planned | 5, 6. Optional roles can use 7. | Two construct jobs run within owner and navigation budgets, stop safely when blocked, and resume after restart. Workshops gain useful late-game upgrades. |
@@ -71,3 +71,7 @@ Normal, Bright, and Unstable nodes appear in fresh Overworld chunks. The Thaumom
 ### Essentia Logistics and Thaumonomicon
 
 The Alchemical Furnace processes a profiled input into an Arcane Alembic. Reusable phials transfer individual aspects into Warded Jars. The Thaumonomicon keeps existing observations and the aspect index and adds eight data-driven research categories. [Progression, recipes, and transport design](ESSENTIA_LOGISTICS.md)
+
+### Essentia Transport Foundation
+
+Tube networks find compatible storage without buffering essentia in transit. Valves block routes and filters select a known aspect. Players study storage, discover Vitreus, and place a tube to unlock flow controls. [Transport rules, history, and verification](ESSENTIA_TRANSPORT.md)

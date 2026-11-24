@@ -99,6 +99,27 @@
       "parents": [
         "thaumiclegacy:alchemy_foundations"
       ]
+    },
+    {
+      "id": "thaumiclegacy:warded_jars",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.warded_jars",
+      "gate": "jar_use",
+      "parents": ["thaumiclegacy:essentia_distillation"]
+    },
+    {
+      "id": "thaumiclegacy:essentia_transport",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.essentia_transport",
+      "gate": "vitreus_discovered",
+      "parents": ["thaumiclegacy:warded_jars"]
+    },
+    {
+      "id": "thaumiclegacy:essentia_controls",
+      "category": "thaumiclegacy:alchemy",
+      "translation": "screen.thaumiclegacy.journal.essentia_controls",
+      "gate": "tube_placed",
+      "parents": ["thaumiclegacy:essentia_transport"]
     }
   ]
 }

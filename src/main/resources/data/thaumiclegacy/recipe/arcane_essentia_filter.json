@@ -1,0 +1,24 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    "ALA",
+    " T "
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "L": {
+      "item": "thaumiclegacy:attuned_lens"
+    },
+    "T": {
+      "item": "thaumiclegacy:essentia_tube"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:essentia_filter",
+    "count": 1
+  },
+  "vis_cost": 10,
+  "research": "thaumiclegacy:essentia_controls"
+}

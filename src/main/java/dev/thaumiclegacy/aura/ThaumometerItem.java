@@ -40,7 +40,8 @@ public final class ThaumometerItem extends FieldLensItem {
 			}
 			return true;
 		}
-		return RevealingSight.measureCrucible(player, target) || RevealingSight.measureLogistics(player, target);
+		boolean transport = RevealingSight.measureTransport(player, target);
+		return RevealingSight.measureCrucible(player, target) || RevealingSight.measureLogistics(player, target) || transport;
 	}
 
 	@Override

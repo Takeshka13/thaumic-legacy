@@ -30,6 +30,7 @@ final class AspectDiscoveryData extends SavedData {
 	private static final String ARCHIVE_TAG = "archived_known";
 	private static final String LUX = "thaumiclegacy:lux";
 	private static final String AQUA = "thaumiclegacy:aqua";
+	private static final String VITREUS = "thaumiclegacy:vitreus";
 	// Ember was the old primary for fire sources. The other old IDs have no direct equivalent.
 	private static final Map<String, String> LEGACY_EQUIVALENTS = Map.of("ember", "thaumiclegacy:ignis");
 	private static final Factory<AspectDiscoveryData> FACTORY = new Factory<>(
@@ -192,12 +193,38 @@ final class AspectDiscoveryData extends SavedData {
 					.limit(JournalSnapshotPayload.MAX_DISCOVERED)
 					.map(id -> view(catalog, id, 0, progress.known)).forEach(discovered::add);
 		}
-		boolean firstResearch = firstResearchUnlocked(player, legacy);
-		boolean arcane = arcaneFoundationsUnlocked(player, legacy);
-		boolean alchemy = alchemyFoundationsUnlocked(player, legacy);
-		var evidence = new ResearchProgress.Evidence(firstResearch, arcane, alchemy, nodes, hasLumenBrew(player));
+		var evidence = evidence(player, legacy, nodes);
 		return new JournalSnapshotPayload(legacy.stream().limit(JournalSnapshotPayload.MAX_LEGACY).toList(),
-				firstResearch, arcane, alchemy, specimens, discovered, nodes, ResearchCatalog.current().view(evidence::satisfies));
+				evidence.comparing(), evidence.arcane(), evidence.alchemy(), specimens, discovered, nodes,
+				ResearchCatalog.current().view(evidence::satisfies));
+	}
+
+	ResearchProgress.Evidence evidence(UUID player, List<ResourceLocation> legacy, JournalSnapshotPayload.NodeProgress nodes) {
+		var progress = players.get(player);
+		return new ResearchProgress.Evidence(firstResearchUnlocked(player, legacy), arcaneFoundationsUnlocked(player, legacy),
+				alchemyFoundationsUnlocked(player, legacy), nodes, hasLumenBrew(player),
+				progress != null && progress.jarUsed, progress != null && progress.known.contains(VITREUS),
+				progress != null && progress.tubePlaced);
+	}
+
+	List<String> knownAspects(UUID player, AspectCatalog catalog) {
+		var progress = players.get(player);
+		return progress == null ? List.of() : progress.known.stream().filter(catalog.definitions()::containsKey).sorted().toList();
+	}
+
+	void recordTransportMilestone(UUID player, boolean tube) {
+		if (unreadableData != null) {
+			return;
+		}
+		var progress = players.computeIfAbsent(player, ignored -> new Progress());
+		if (tube ? !progress.tubePlaced : !progress.jarUsed) {
+			if (tube) {
+				progress.tubePlaced = true;
+			} else {
+				progress.jarUsed = true;
+			}
+			setDirty();
+		}
 	}
 
 	boolean hasLumenBrew(UUID player) {
@@ -246,6 +273,8 @@ final class AspectDiscoveryData extends SavedData {
 			readIds(entry, "known", progress.known);
 			readIds(entry, ARCHIVE_TAG, progress.archivedKnown);
 			progress.lumenBrew = entry.getBoolean("lumen_brew");
+			progress.jarUsed = entry.getBoolean("essentia_jar_used");
+			progress.tubePlaced = entry.getBoolean("essentia_tube_placed");
 		}
 		return data;
 	}
@@ -285,6 +314,12 @@ final class AspectDiscoveryData extends SavedData {
 			if (progress.lumenBrew) {
 				entry.putBoolean("lumen_brew", true);
 			}
+			if (progress.jarUsed) {
+				entry.putBoolean("essentia_jar_used", true);
+			}
+			if (progress.tubePlaced) {
+				entry.putBoolean("essentia_tube_placed", true);
+			}
 			if (!progress.archivedKnown.isEmpty()) {
 				entry.put(ARCHIVE_TAG, writeIds(progress.archivedKnown));
 			}
@@ -308,5 +343,7 @@ final class AspectDiscoveryData extends SavedData {
 		private final Set<String> known = new LinkedHashSet<>();
 		private final Set<String> archivedKnown = new LinkedHashSet<>();
 		private boolean lumenBrew;
+		private boolean jarUsed;
+		private boolean tubePlaced;
 	}
 }

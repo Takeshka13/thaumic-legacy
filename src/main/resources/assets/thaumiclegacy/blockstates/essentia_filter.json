@@ -1,0 +1,26 @@
+{
+  "variants": {
+    "axis=z,configured=false": {
+      "model": "thaumiclegacy:block/essentia_filter"
+    },
+    "axis=z,configured=true": {
+      "model": "thaumiclegacy:block/essentia_filter_configured"
+    },
+    "axis=x,configured=false": {
+      "model": "thaumiclegacy:block/essentia_filter",
+      "y": 90
+    },
+    "axis=x,configured=true": {
+      "model": "thaumiclegacy:block/essentia_filter_configured",
+      "y": 90
+    },
+    "axis=y,configured=false": {
+      "model": "thaumiclegacy:block/essentia_filter",
+      "x": 90
+    },
+    "axis=y,configured=true": {
+      "model": "thaumiclegacy:block/essentia_filter_configured",
+      "x": 90
+    }
+  }
+}

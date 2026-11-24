@@ -1,0 +1,6 @@
+{
+  "parent": "thaumiclegacy:block/essentia_filter",
+  "textures": {
+    "status": "thaumiclegacy:block/essentia_filter_configured"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "thaumiclegacy:block/essentia_valve",
+  "textures": {
+    "status": "thaumiclegacy:block/essentia_valve_closed"
+  }
+}

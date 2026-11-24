@@ -9,6 +9,7 @@ import dev.thaumiclegacy.logistics.EssentiaStorageBlockEntity;
 import dev.thaumiclegacy.node.AuraNodeBlock;
 import dev.thaumiclegacy.node.AuraNodeBlockEntity;
 import dev.thaumiclegacy.node.AuraNodes;
+import dev.thaumiclegacy.transport.EssentiaTransport;
 import dev.thaumiclegacy.wand.WandVis;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -39,6 +40,7 @@ public final class RevealingSight {
 		PayloadTypeRegistry.playS2C().register(RevealingPayload.TYPE, RevealingPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(NodeSightPayload.TYPE, NodeSightPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(LogisticsReadoutPayload.TYPE, LogisticsReadoutPayload.STREAM_CODEC);
+		PayloadTypeRegistry.playS2C().register(TransportReadoutPayload.TYPE, TransportReadoutPayload.STREAM_CODEC);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (server.getTickCount() % UPDATE_INTERVAL == 0) {
 				for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -83,6 +85,23 @@ public final class RevealingSight {
 		return revealLogistics(player, pos, false);
 	}
 
+	public static boolean measureTransport(ServerPlayer player, BlockPos pos) {
+		return revealTransport(player, pos, false);
+	}
+
+	private static boolean revealTransport(ServerPlayer player, BlockPos pos, boolean worn) {
+		var reading = EssentiaTransport.read(player.serverLevel(), pos);
+		if (reading.isEmpty()) {
+			return false;
+		}
+		if (ServerPlayNetworking.canSend(player, TransportReadoutPayload.TYPE)) {
+			var view = reading.orElseThrow();
+			ServerPlayNetworking.send(player, new TransportReadoutPayload(pos, worn, view.aspect(), view.amount(),
+					view.connections(), view.status().name().toLowerCase(Locale.ROOT), view.filter()));
+		}
+		return true;
+	}
+
 	private static boolean revealLogistics(ServerPlayer player, BlockPos pos, boolean worn) {
 		var level = player.serverLevel();
 		if (!level.hasChunkAt(pos)) {
@@ -111,7 +130,8 @@ public final class RevealingSight {
 	private static void revealFocus(ServerPlayer player, boolean worn) {
 		boolean readNodes = ServerPlayNetworking.canSend(player, NodeSightPayload.TYPE);
 		boolean revealBlocks = worn && ServerPlayNetworking.canSend(player, RevealingPayload.TYPE);
-		if (!readNodes && !revealBlocks) {
+		boolean readTransport = ServerPlayNetworking.canSend(player, TransportReadoutPayload.TYPE);
+		if (!readNodes && !revealBlocks && !readTransport) {
 			return;
 		}
 		var level = player.serverLevel();
@@ -131,11 +151,18 @@ public final class RevealingSight {
 				ServerPlayNetworking.send(player, new NodeSightPayload(worn, nearby, nodeReading));
 			}
 		}
-		if (focus.isEmpty() || !revealBlocks) {
+		if (focus.isEmpty()) {
 			return;
 		}
 		var pos = focus.orElseThrow();
+		boolean transport = readTransport && revealTransport(player, pos, worn);
+		if (!revealBlocks) {
+			return;
+		}
 		if (revealLogistics(player, pos, true)) {
+			return;
+		}
+		if (transport) {
 			return;
 		}
 		var state = level.getBlockState(pos);

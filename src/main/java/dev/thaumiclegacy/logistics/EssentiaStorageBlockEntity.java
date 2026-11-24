@@ -1,10 +1,13 @@
 package dev.thaumiclegacy.logistics;
 
 import dev.thaumiclegacy.aspect.AspectCatalog;
+import dev.thaumiclegacy.research.ResearchProgress;
+import dev.thaumiclegacy.transport.EssentiaTransport;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -18,6 +21,8 @@ import java.util.TreeMap;
 public final class EssentiaStorageBlockEntity extends BlockEntity {
 	public static final int CAPACITY = 64;
 	private final TreeMap<String, Integer> aspects = new TreeMap<>();
+	private int transportOrder;
+	private EssentiaTransport.Activity transportActivity;
 
 	EssentiaStorageBlockEntity(BlockPos pos, BlockState state) {
 		super(EssentiaLogistics.STORAGE_ENTITY, pos, state);
@@ -25,6 +30,45 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 
 	public StorageView snapshot() {
 		return new StorageView(CAPACITY, Map.copyOf(aspects), singleAspect());
+	}
+
+	public int nextTransportOrder() {
+		return transportOrder++;
+	}
+
+	public EssentiaTransport.Activity transportActivity() {
+		return transportActivity;
+	}
+
+	public void noteTransport(EssentiaTransport.Activity activity) {
+		transportActivity = activity;
+	}
+
+	/** Computes and applies one validated debit and credit on the same server thread. */
+	public boolean transferOneTo(EssentiaStorageBlockEntity target, String aspect) {
+		if (!(level instanceof ServerLevel server) || !server.getServer().isSameThread()
+				|| target.getLevel() != server || !attached(server) || !target.attached(server)
+				|| !getBlockState().is(EssentiaLogistics.ARCANE_ALEMBIC)
+				|| !target.getBlockState().is(EssentiaLogistics.WARDED_JAR)) {
+			return false;
+		}
+		int source = aspects.getOrDefault(aspect, 0);
+		if (source == 0 || !target.canAccept(Map.of(aspect, 1))) {
+			return false;
+		}
+		if (source == 1) {
+			aspects.remove(aspect);
+		} else {
+			aspects.put(aspect, source - 1);
+		}
+		target.aspects.merge(aspect, 1, Integer::sum);
+		setChanged();
+		target.setChanged();
+		return true;
+	}
+
+	private boolean attached(ServerLevel server) {
+		return !isRemoved() && server.hasChunkAt(worldPosition) && server.getBlockEntity(worldPosition) == this;
 	}
 
 	boolean canAccept(Map<String, Integer> batch) {
@@ -90,6 +134,9 @@ public final class EssentiaStorageBlockEntity extends BlockEntity {
 		aspects.merge(id, moved, Integer::sum);
 		EssentiaPhial.writeContents(held, id, contents.amount() - moved);
 		changed(player);
+		if (singleAspect()) {
+			ResearchProgress.recordJarUse(player);
+		}
 		return EssentiaLogistics.feedback(player, true, "transferred_in", EssentiaLogistics.aspectName(id), moved);
 	}
 

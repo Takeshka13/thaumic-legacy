@@ -25,9 +25,9 @@ The existing Research Journal item opens the Thaumonomicon. Its category views s
 
 Place data bundles under `data/<namespace>/thaumiclegacy/research/`. Categories have `id`, `title` (translation key), and `order`. The optional `.short` translation gives a compact tab label. Entries have `id`, `category`, `translation` (prefix for `.locked.title`, `.locked.body`, `.unlocked.title`, and `.unlocked.body`), `gate` (an implemented server milestone or `always`), optional `parents`, and optional `hidden`. A hidden entry appears once all parents are unlocked. Missing or duplicate IDs, missing parents or categories, unknown gates, and cycles reject the reload. Existing research unlock rules and saved discovery IDs remain valid.
 
-## Next transport increment
+## Essentia transport
 
-Add typed input and output ports with explicit loaded endpoints. Route bounded amounts on the server and debit only after the destination accepts. Add valves for flow control and filters for aspect selection. Deterministic routing needs a stable priority and tie-break, capacity and backpressure checks, loop prevention, and tests for chunks unloading mid-route. Existing manual transfer remains useful for setup, sorting, and recovery. Infusion can then consume stored essentia with predictable accounting.
+Tubes, valves, and filters move individual aspects from alembics into jars over bounded loaded routes. Manual transfer remains useful for setup, sorting, and recovery. Pressure simulation and buffer devices remain future work. [Essentia Transport Foundation](ESSENTIA_TRANSPORT.md)
 
 ## Verification
 

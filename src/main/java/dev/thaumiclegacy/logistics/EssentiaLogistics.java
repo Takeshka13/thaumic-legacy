@@ -2,6 +2,7 @@ package dev.thaumiclegacy.logistics;
 
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.research.FieldLensItem;
+import dev.thaumiclegacy.transport.EssentiaTransport;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -52,6 +53,7 @@ public final class EssentiaLogistics {
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			BlockPos pos = hit.getBlockPos();
 			if (player.isSpectator() || player.getItemInHand(hand).getItem() instanceof FieldLensItem
+					|| EssentiaTransport.isPartItem(player.getItemInHand(hand))
 					|| !level.hasChunkAt(pos) || !(level.getBlockState(pos).getBlock() instanceof EssentiaMachineBlock)) {
 				return InteractionResult.PASS;
 			}

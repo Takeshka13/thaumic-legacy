@@ -1,0 +1,22 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " R ",
+    "GGG",
+    " R "
+  ],
+  "key": {
+    "R": {
+      "item": "thaumiclegacy:resonant_copper"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:essentia_tube",
+    "count": 4
+  },
+  "vis_cost": 8,
+  "research": "thaumiclegacy:essentia_transport"
+}

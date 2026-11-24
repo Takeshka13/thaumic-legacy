@@ -1,0 +1,26 @@
+{
+  "variants": {
+    "axis=z,open=false": {
+      "model": "thaumiclegacy:block/essentia_valve_closed"
+    },
+    "axis=z,open=true": {
+      "model": "thaumiclegacy:block/essentia_valve"
+    },
+    "axis=x,open=false": {
+      "model": "thaumiclegacy:block/essentia_valve_closed",
+      "y": 90
+    },
+    "axis=x,open=true": {
+      "model": "thaumiclegacy:block/essentia_valve",
+      "y": 90
+    },
+    "axis=y,open=false": {
+      "model": "thaumiclegacy:block/essentia_valve_closed",
+      "x": 90
+    },
+    "axis=y,open=true": {
+      "model": "thaumiclegacy:block/essentia_valve",
+      "x": 90
+    }
+  }
+}

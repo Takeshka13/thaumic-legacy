@@ -16,6 +16,7 @@ import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ResearchJournalItem;
 import dev.thaumiclegacy.research.ResearchProgress;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.transport.EssentiaTransport;
 import dev.thaumiclegacy.wand.WandItem;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
 import net.fabricmc.api.ModInitializer;
@@ -69,6 +70,7 @@ public class ThaumicLegacy implements ModInitializer {
 		ArcaneWorkbench.register();
 		Alchemy.register();
 		EssentiaLogistics.register();
+		EssentiaTransport.register();
 		ResearchProgress.register();
 		AuraNodes.register();
 		RevealingSight.register(goggles);
