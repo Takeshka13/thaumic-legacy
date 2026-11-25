@@ -1,0 +1,70 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "material": "0",
+        "inlet": "false"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_nether"
+      }
+    },
+    {
+      "when": {
+        "material": "1",
+        "inlet": "false"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_obsidian"
+      }
+    },
+    {
+      "when": {
+        "material": "2",
+        "inlet": "false"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_heart"
+      }
+    },
+    {
+      "when": {
+        "inlet": "true",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_inlet"
+      }
+    },
+    {
+      "when": {
+        "inlet": "true",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_inlet",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "inlet": "true",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_inlet",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "inlet": "true",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "thaumiclegacy:block/infernal_shell_inlet",
+        "y": 270
+      }
+    }
+  ]
+}

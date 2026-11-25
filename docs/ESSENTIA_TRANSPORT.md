@@ -23,7 +23,7 @@ Aim a Thaumometer or wear Goggles of Revealing to read physical connections, the
 | Essentia Transport | Warded Jars and discovered Vitreus | Four tubes for 8 Vis |
 | Valves and Filtering | Essentia Transport and personal placement of a plain tube | A valve for 6 Vis and a filter for 10 Vis |
 
-For tubes, put three glass panes across the middle and Resonant Copper above and below the center pane. For a valve, put a lever above a tube with copper ingots beside it. For a filter, place an Attuned Lens between two amethyst shards with a tube beneath it. Existing Warded Jar recipes and saved discoveries remain valid.
+For tubes, put three glass panes across the middle and Resonant Copper above and below the center pane. For a valve, put a lever above a tube with copper ingots beside it. For a filter, place a Thaumometer between two amethyst shards with a tube beneath it. Existing Warded Jar recipes and saved discoveries remain valid.
 
 ## Verification scenario
 

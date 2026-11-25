@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "thaumiclegacy:block/infernal_shell",
+    "north": "thaumiclegacy:block/infernal_inlet",
+    "south": "thaumiclegacy:block/infernal_shell",
+    "east": "thaumiclegacy:block/infernal_shell",
+    "west": "thaumiclegacy:block/infernal_shell",
+    "up": "thaumiclegacy:block/infernal_shell",
+    "down": "thaumiclegacy:block/infernal_shell"
+  }
+}

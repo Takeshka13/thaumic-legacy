@@ -1,5 +1,7 @@
 package dev.thaumiclegacy.advanced;
 
+import dev.thaumiclegacy.revealing.RevealingPayload;
+
 import dev.thaumiclegacy.logistics.EssentiaLogistics;
 import dev.thaumiclegacy.logistics.EssentiaPhial;
 import net.minecraft.core.BlockPos;
@@ -78,7 +80,7 @@ abstract class AdvancedMachineEntity extends BlockEntity implements AdvancedEsse
 		phial.set(EssentiaPhial.CONTENTS, new EssentiaPhial.Contents(id, quantity));
 		player.getInventory().setChanged();
 		setChanged();
-		return AdvancedAlchemy.feedback(player, true, "essentia_out", AdvancedAlchemy.aspectName(id), quantity);
+		return AdvancedAlchemy.feedback(player, true, "essentia_out", RevealingPayload.AspectAmount.nameFor(player, id), quantity);
 	}
 
 	final boolean depositPhial(ServerPlayer player, ItemStack phial, EssentiaBuffer buffer, int limit) {
@@ -95,6 +97,6 @@ abstract class AdvancedMachineEntity extends BlockEntity implements AdvancedEsse
 		}
 		player.getInventory().setChanged();
 		setChanged();
-		return AdvancedAlchemy.feedback(player, true, "essentia_in", AdvancedAlchemy.aspectName(contents.aspect()), quantity);
+		return AdvancedAlchemy.feedback(player, true, "essentia_in", RevealingPayload.AspectAmount.nameFor(player, contents.aspect()), quantity);
 	}
 }

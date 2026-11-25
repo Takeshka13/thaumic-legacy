@@ -60,9 +60,10 @@ final class RevealingOverlay {
 			for (int index = 0; index < shown; index++) {
 				var aspect = crucible.aspects().get(index);
 				int rowY = y + 27 + index * ROW;
-				AspectGlyphs.draw(graphics, aspect.id(), aspect.glyph(), aspect.color(), x + 6, rowY - 1);
-				var id = ResourceLocation.parse(aspect.id());
-				var name = Component.translatableWithFallback(id.toLanguageKey("aspect"), id.getPath());
+				if (!aspect.id().isEmpty()) {
+					AspectGlyphs.draw(graphics, aspect.id(), aspect.glyph(), aspect.color(), x + 6, rowY - 1);
+				}
+				var name = aspect.name();
 				graphics.drawString(font, Component.translatable("message.thaumiclegacy.crucible.aspect", name, aspect.amount()),
 					x + 21, rowY, TEXT, false);
 			}

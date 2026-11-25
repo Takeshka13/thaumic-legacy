@@ -2,6 +2,7 @@ package dev.thaumiclegacy.transport;
 
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.advanced.AdvancedAlchemy;
+import dev.thaumiclegacy.furnace.InfernalFurnace;
 import dev.thaumiclegacy.advanced.AdvancedEssentiaPort;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.logistics.EssentiaLogistics;
@@ -16,7 +17,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import dev.thaumiclegacy.revealing.RevealingPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -104,7 +105,7 @@ public final class EssentiaTransport {
 			}
 			String id = known.get((known.indexOf(part.filter()) + 1) % known.size());
 			part.configure(id);
-			message(player, "filter_set", Component.translatableWithFallback(ResourceLocation.parse(id).toLanguageKey("aspect"), id));
+			message(player, "filter_set", RevealingPayload.AspectAmount.nameFor(player, id));
 		} else {
 			read(level, part.getBlockPos()).ifPresent(reading ->
 					message(player, "tube_status", Component.translatable(reading.status().translationKey())));
@@ -199,7 +200,8 @@ public final class EssentiaTransport {
 		if (state.is(EssentiaLogistics.WARDED_JAR)) {
 			return face == Direction.UP;
 		}
-		return TransportBlock.hasPort(state, face) || AdvancedAlchemy.inputPort(state, face) || AdvancedAlchemy.outputPort(state, face);
+		return TransportBlock.hasPort(state, face) || AdvancedAlchemy.inputPort(state, face) || AdvancedAlchemy.outputPort(state, face)
+				|| InfernalFurnace.inputPort(state, face);
 	}
 
 	static Status localStatus(BlockState state, TransportBlockEntity transport) {

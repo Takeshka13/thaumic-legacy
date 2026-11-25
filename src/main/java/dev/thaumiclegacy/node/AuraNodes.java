@@ -36,7 +36,7 @@ public final class AuraNodes {
 
 	public static final AuraNodeBlock BLOCK = Registry.register(BuiltInRegistries.BLOCK, ID,
 			new AuraNodeBlock(BlockBehaviour.Properties.of().strength(-1.0F, 3_600_000.0F).noLootTable()
-					.pushReaction(PushReaction.BLOCK).noCollission().noOcclusion().lightLevel(state -> 8)));
+					.pushReaction(PushReaction.BLOCK).noCollission().noOcclusion()));
 	public static final BlockEntityType<AuraNodeBlockEntity> BLOCK_ENTITY_TYPE = Registry.register(
 			BuiltInRegistries.BLOCK_ENTITY_TYPE, ID, FabricBlockEntityTypeBuilder.create(AuraNodeBlockEntity::new, BLOCK).build());
 

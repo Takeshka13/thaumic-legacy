@@ -1,5 +1,6 @@
 package dev.thaumiclegacy.wand;
 
+import dev.thaumiclegacy.furnace.InfernalFurnace;
 import dev.thaumiclegacy.node.AuraNodeBlockEntity;
 import dev.thaumiclegacy.node.AuraNodes;
 import dev.thaumiclegacy.research.NodeResearch;
@@ -13,14 +14,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
-import java.util.List;
 
 public final class WandItem extends Item {
 	private static final int USE_DURATION = 72_000;
@@ -33,10 +33,12 @@ public final class WandItem extends Item {
 	@Override
 	public InteractionResult useOn(UseOnContext context) {
 		Player player = context.getPlayer();
-		if (player == null || !context.getLevel().getBlockState(context.getClickedPos()).is(AuraNodes.BLOCK)) {
-			return InteractionResult.PASS;
+		var state = context.getLevel().getBlockState(context.getClickedPos());
+		if (player instanceof ServerPlayer server && state.is(Blocks.IRON_BARS)) {
+			return InfernalFurnace.activate(server, context.getItemInHand(), context.getClickedPos(), context.getClickedFace());
 		}
-		return use(context.getLevel(), player, context.getHand()).getResult();
+		return player != null && state.is(AuraNodes.BLOCK)
+				? use(context.getLevel(), player, context.getHand()).getResult() : InteractionResult.PASS;
 	}
 
 	@Override
@@ -106,12 +108,4 @@ public final class WandItem extends Item {
 		player.displayClientMessage(Component.translatable("message.thaumiclegacy.node." + key), true);
 	}
 
-	@Override
-	public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-		WandVis vis = WandVis.get(stack);
-		for (var primal : WandVis.Primal.values()) {
-			tooltip.add(Component.translatable("tooltip.thaumiclegacy.wand.primal",
-					Component.translatable(primal.translationKey()), vis.amount(primal), WandVis.CAPACITY));
-		}
-	}
 }

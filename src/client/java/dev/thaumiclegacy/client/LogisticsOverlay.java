@@ -121,9 +121,10 @@ final class LogisticsOverlay {
 
 	private void drawAspect(GuiGraphics graphics, Minecraft client, int x, int y, int index) {
 		var aspect = reading.aspects().get(index);
-		AspectGlyphs.draw(graphics, aspect.id(), aspect.glyph(), aspect.color(), x + 6, y - 1);
-		var id = ResourceLocation.parse(aspect.id());
-		var name = Component.translatableWithFallback(id.toLanguageKey("aspect"), id.getPath());
+		if (!aspect.id().isEmpty()) {
+			AspectGlyphs.draw(graphics, aspect.id(), aspect.glyph(), aspect.color(), x + 6, y - 1);
+		}
+		var name = aspect.name();
 		var line = Component.translatable("message.thaumiclegacy.logistics.aspect", name, aspect.amount());
 		graphics.drawString(client.font, line, x + 21, y, TEXT, false);
 	}

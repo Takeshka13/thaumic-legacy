@@ -1,5 +1,7 @@
 package dev.thaumiclegacy.research;
 
+import dev.thaumiclegacy.revealing.AspectTooltipPayload;
+
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.research.AspectDiscoveryData.Specimen;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -204,6 +206,7 @@ public class FieldLensItem extends Item {
 		if (!wasUnlocked && data.firstResearchUnlocked(uuid, oldData.getObservations(uuid))) {
 			player.displayClientMessage(Component.translatable("message.thaumiclegacy.research_unlocked"), false);
 		}
+		AspectTooltipPayload.sync(player);
 		if (ServerPlayNetworking.canSend(player, ScanFeedbackPayload.TYPE)) {
 			var discovery = result.discovery() == null ? null : catalog.definitions().get(result.discovery());
 			ServerPlayNetworking.send(player, new ScanFeedbackPayload(discovery == null ? 0xD2B277 : discovery.color(),

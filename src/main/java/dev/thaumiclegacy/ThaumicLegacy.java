@@ -1,12 +1,12 @@
 package dev.thaumiclegacy;
 
 import dev.thaumiclegacy.advanced.AdvancedAlchemy;
+import dev.thaumiclegacy.furnace.InfernalFurnace;
 import dev.thaumiclegacy.alchemy.Alchemy;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.AuraCommands;
 import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.aura.ThaumometerItem;
-import dev.thaumiclegacy.item.AuraSurveyorItem;
 import dev.thaumiclegacy.item.CleansingSaltItem;
 import dev.thaumiclegacy.logistics.EssentiaLogistics;
 import dev.thaumiclegacy.node.AuraNodes;
@@ -48,7 +48,7 @@ public class ThaumicLegacy implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		Item fieldLens = Registry.register(BuiltInRegistries.ITEM, id("field_lens"),
-				new FieldLensItem(new Item.Properties().stacksTo(1)));
+				new ThaumometerItem(new Item.Properties().stacksTo(1)));
 		Item researchJournal = Registry.register(BuiltInRegistries.ITEM, id("research_journal"),
 				new ResearchJournalItem(new Item.Properties().stacksTo(1)));
 		Item thaumometer = Registry.register(BuiltInRegistries.ITEM, id("thaumometer"),
@@ -57,9 +57,10 @@ public class ThaumicLegacy implements ModInitializer {
 				new GogglesItem(new Item.Properties().stacksTo(1)));
 		Item wand = Registry.register(BuiltInRegistries.ITEM, id("wand"), new WandItem(new Item.Properties()));
 		Item resonantCopper = Registry.register(BuiltInRegistries.ITEM, id("resonant_copper"), new Item(new Item.Properties()));
-		Item attunedLens = Registry.register(BuiltInRegistries.ITEM, id("attuned_lens"), new Item(new Item.Properties()));
+		Item attunedLens = Registry.register(BuiltInRegistries.ITEM, id("attuned_lens"), new ThaumometerItem(new Item.Properties()));
 		Item auraSurveyor = Registry.register(BuiltInRegistries.ITEM, id("aura_surveyor"),
-				new AuraSurveyorItem(new Item.Properties().stacksTo(1)));
+				new ThaumometerItem(new Item.Properties().stacksTo(1)));
+		ThaumometerItem.registerLegacyExchange(thaumometer, fieldLens, auraSurveyor, attunedLens);
 		Item emberSalt = Registry.register(BuiltInRegistries.ITEM, id("ember_salt"), new Item(new Item.Properties()));
 		Item cleansingSalt = Registry.register(BuiltInRegistries.ITEM, id("cleansing_salt"),
 				new CleansingSaltItem(new Item.Properties()));
@@ -73,6 +74,7 @@ public class ThaumicLegacy implements ModInitializer {
 		EssentiaLogistics.register();
 		EssentiaTransport.register();
 		AdvancedAlchemy.register();
+		InfernalFurnace.register();
 		ResearchProgress.register();
 		AuraNodes.register();
 		RevealingSight.register(goggles);
@@ -84,11 +86,8 @@ public class ThaumicLegacy implements ModInitializer {
 					entries.accept(researchJournal);
 					entries.accept(goggles);
 					entries.accept(wand);
-					entries.accept(auraSurveyor);
-					entries.accept(fieldLens);
 
 					entries.accept(resonantCopper);
-					entries.accept(attunedLens);
 					entries.accept(emberSalt);
 
 					entries.accept(cleansingSalt);
@@ -105,6 +104,7 @@ public class ThaumicLegacy implements ModInitializer {
 					entries.accept(AdvancedAlchemy.ALCHEMICAL_CENTRIFUGE);
 					entries.accept(AdvancedAlchemy.THAUMATORIUM);
 
+					entries.accept(InfernalFurnace.BELLOWS_ITEM);
 					entries.accept(ArcaneWorkbench.ITEM);
 					entries.accept(lumenGlassItem);
 				}).build());

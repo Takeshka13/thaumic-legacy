@@ -1,5 +1,7 @@
 package dev.thaumiclegacy.logistics;
 
+import dev.thaumiclegacy.revealing.RevealingPayload;
+
 import dev.thaumiclegacy.advanced.AdvancedEssentiaPort;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.research.ResearchProgress;
@@ -176,7 +178,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 			aspects.compute(id, (key, value) -> value == moved ? null : value - moved);
 			EssentiaPhial.writeContents(held, id, moved);
 			changed(player);
-			return EssentiaLogistics.feedback(player, true, "transferred_out", EssentiaLogistics.aspectName(id), moved);
+			return EssentiaLogistics.feedback(player, true, "transferred_out", RevealingPayload.AspectAmount.nameFor(player, id), moved);
 		}
 		String id = contents.aspect();
 		if (singleAspect() && !matchesContents(id)) {
@@ -192,7 +194,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 		if (singleAspect()) {
 			ResearchProgress.recordJarUse(player);
 		}
-		return EssentiaLogistics.feedback(player, true, "transferred_in", EssentiaLogistics.aspectName(id), moved);
+		return EssentiaLogistics.feedback(player, true, "transferred_in", RevealingPayload.AspectAmount.nameFor(player, id), moved);
 	}
 
 	private boolean applyLabel(ServerPlayer player, InteractionHand hand, ItemStack held) {
@@ -217,7 +219,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 		label = chosen;
 		held.shrink(1);
 		changed(player);
-		return EssentiaLogistics.feedback(player, true, "label_set", EssentiaLogistics.aspectName(label));
+		return EssentiaLogistics.feedback(player, true, "label_set", RevealingPayload.AspectAmount.nameFor(player, label));
 	}
 
 	private void changed(ServerPlayer player) {
@@ -241,7 +243,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 		player.sendSystemMessage(EssentiaLogistics.text("storage_status", total(), CAPACITY));
 		for (var entry : aspects.entrySet()) {
 			player.sendSystemMessage(EssentiaLogistics.text("aspect",
-					EssentiaLogistics.aspectName(entry.getKey()), entry.getValue()));
+					RevealingPayload.AspectAmount.nameFor(player, entry.getKey()), entry.getValue()));
 		}
 	}
 

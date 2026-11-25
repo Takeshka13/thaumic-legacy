@@ -62,7 +62,7 @@ Separate distillation, output vessels, and transfer networks remain later system
 
 ### F08 Magical crafting
 
-The Arcane Workbench exposes a persistent 3×3 ingredient grid, a result preview, and the cost and availability of local Vis. Arcane Foundations uses existing observation progress and knowledge of Lux to unlock advanced recipes. The three recipes lead from raw materials to the Aura Surveyor.
+The Arcane Workbench exposes a persistent 3×3 ingredient grid, a result preview, and the cost and availability of local Vis. Arcane Foundations uses existing observation progress and knowledge of Lux to unlock advanced recipes. Recipes produce components and researched equipment, including Arcane Bellows.
 
 The menu uses a dedicated craft action. The server checks the station, recipe, player research, input stacks, local Vis, and destination capacity before inserting the result. A request is bound to one attempt on the open menu. See [Arcane Workbench](ARCANE_WORKBENCH.md) for recipe data and transaction behavior.
 

@@ -276,7 +276,7 @@ final class ResearchJournalScreen extends Screen {
 
 	private static Paragraph aspectParagraph(AspectView aspect, boolean showAmount) {
 		boolean known = !aspect.id().isEmpty();
-		Component name = known ? aspectName(aspect.id()) : Component.translatable(KEY + "aspect.unknown");
+		Component name = known ? aspectName(aspect.id()).copy().withColor(aspect.color()) : Component.translatable(KEY + "aspect.unknown");
 		if (known && showAmount && aspect.amount() > 0) {
 			name = Component.translatable(KEY + "aspect.amount", name, aspect.amount());
 		}

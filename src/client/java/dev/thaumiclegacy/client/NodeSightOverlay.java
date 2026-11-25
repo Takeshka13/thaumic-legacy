@@ -19,7 +19,6 @@ final class NodeSightOverlay {
 	private static final int FRAME = 0xFF9E7450;
 	private static final int BACKGROUND = 0xEC1D191D;
 	private static final int TEXT = 0xFFE1D4BB;
-	private static final int TITLE = 0xFFF2D39C;
 
 	private Snapshot worn;
 	private Snapshot measured;
@@ -44,9 +43,6 @@ final class NodeSightOverlay {
 			&& client.player.getItemBySlot(EquipmentSlot.HEAD)
 				.is(BuiltInRegistries.ITEM.get(ThaumicLegacy.id("goggles_of_revealing")));
 		int y = graphics.guiHeight() >= 150 ? 76 : 6;
-		if (live && !worn.data().nearby().isEmpty()) {
-			renderNearby(graphics, client, y);
-		}
 		if (!(client.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) {
 			return;
 		}
@@ -61,25 +57,6 @@ final class NodeSightOverlay {
 		}
 	}
 
-	private void renderNearby(GuiGraphics graphics, Minecraft client, int y) {
-		var markers = worn.data().nearby();
-		int width = Math.min(158, graphics.guiWidth() / 2 - 8);
-		int count = Math.min(markers.size(), Math.max(0, (graphics.guiHeight() - y - 22) / (2 * ROW)));
-		int x = 6;
-		panel(graphics, x, y, width, 18 + count * 2 * ROW);
-		graphics.drawString(client.font, Component.translatable(KEY + "nearby", markers.size()), x + 6, y + 5, TITLE, false);
-		for (int index = 0; index < count; index++) {
-			var marker = markers.get(index);
-			var pos = marker.pos();
-			int distance = (int) Math.round(Math.sqrt(pos.distSqr(client.player.blockPosition())));
-			int rowY = y + 17 + index * 2 * ROW;
-			var line = Component.translatable(KEY + "marker", variant(marker.variant()), distance);
-			graphics.drawString(client.font, line, x + 6, rowY, tint(marker.variant()), false);
-			graphics.drawString(client.font, Component.translatable(KEY + "coordinates", pos.getX(), pos.getY(), pos.getZ()),
-				x + 12, rowY + ROW, TEXT, false);
-		}
-	}
-
 	private boolean renderFocus(GuiGraphics graphics, Minecraft client, int y, Snapshot snapshot, BlockHitResult hit) {
 		var maybeReading = snapshot.data().focus();
 		if (maybeReading.isEmpty() || !maybeReading.orElseThrow().marker().pos().equals(hit.getBlockPos())) {
@@ -89,16 +66,28 @@ final class NodeSightOverlay {
 		String variant = reading.marker().variant();
 		int width = Math.min(158, graphics.guiWidth() / 2 - 8);
 		int x = graphics.guiWidth() - width - 6;
-		panel(graphics, x, y, width, 20 + (1 + reading.reserves().size()) * ROW);
+		int rows = Math.max(0, (graphics.guiHeight() - y - 50) / ROW);
+		int shown = Math.min(reading.reserves().size(), rows);
+		boolean more = shown < reading.reserves().size();
+		panel(graphics, x, y, width, 20 + (1 + shown + (more ? 1 : 0)) * ROW);
 		var title = Component.translatable(KEY + "focus", variant(variant));
 		graphics.drawString(client.font, title, x + 6, y + 5, tint(variant), false);
-		String condition = reading.reserves().stream().noneMatch(vis -> vis.amount() > 0) ? "depleted"
-			: reading.reserves().stream().anyMatch(vis -> vis.amount() < vis.capacity()) ? "recovering" : "full";
+		String condition = reading.reserves().stream().noneMatch(vis -> vis.aspect().amount() > 0) ? "depleted"
+			: reading.reserves().stream().anyMatch(vis -> vis.aspect().amount() < vis.capacity()) ? "recovering" : "full";
 		graphics.drawString(client.font, Component.translatable(KEY + "condition." + condition), x + 6, y + 17, TEXT, false);
-		for (int index = 0; index < reading.reserves().size(); index++) {
+		for (int index = 0; index < shown; index++) {
 			var vis = reading.reserves().get(index);
-			var line = Component.translatable(KEY + "reserve", Component.translatable(vis.aspectKey()), vis.amount(), vis.capacity());
-			graphics.drawString(client.font, line, x + 6, y + 17 + (index + 1) * ROW, TEXT, false);
+			var aspect = vis.aspect();
+			int rowY = y + 17 + (index + 1) * ROW;
+			if (!aspect.id().isEmpty()) {
+				AspectGlyphs.draw(graphics, aspect.id(), aspect.glyph(), aspect.color(), x + 6, rowY - 1);
+			}
+			var line = Component.translatable(KEY + "reserve", aspect.name(), aspect.amount(), vis.capacity());
+			graphics.drawString(client.font, line, x + 21, rowY, TEXT, false);
+		}
+		if (more) {
+			graphics.drawString(client.font, Component.translatable("hud.thaumiclegacy.revealing.more",
+				reading.reserves().size() - shown), x + 6, y + 17 + (shown + 1) * ROW, TEXT, false);
 		}
 		return true;
 	}

@@ -2,7 +2,7 @@
   "type": "thaumiclegacy:arcane_workbench",
   "pattern": ["L L", "CCC"],
   "key": {
-    "L": {"item": "thaumiclegacy:attuned_lens"},
+    "L": {"item": "thaumiclegacy:thaumometer"},
     "C": {"item": "minecraft:leather"}
   },
   "result": {"id": "thaumiclegacy:goggles_of_revealing", "count": 1},

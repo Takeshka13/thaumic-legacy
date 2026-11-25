@@ -19,6 +19,8 @@ public final class ResearchProgress {
 	public static final ResourceLocation WARDED_JAR_LABELS = ThaumicLegacy.id("warded_jar_labels");
 	public static final ResourceLocation IMPROVED_DISTILLATION = ThaumicLegacy.id("improved_distillation");
 	public static final ResourceLocation ALCHEMICAL_CENTRIFUGE = ThaumicLegacy.id("alchemical_centrifuge");
+	public static final ResourceLocation INFERNAL_FURNACE = ThaumicLegacy.id("infernal_furnace");
+	public static final ResourceLocation ARCANE_BELLOWS = ThaumicLegacy.id("arcane_bellows");
 	public static final ResourceLocation AUTOMATED_ALCHEMY = ThaumicLegacy.id("automated_alchemy");
 
 	private ResearchProgress() {

@@ -9,7 +9,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
@@ -69,9 +68,6 @@ public final class AdvancedAlchemy {
 		return changed;
 	}
 
-	static Component aspectName(String aspect) {
-		return Component.translatableWithFallback(ResourceLocation.parse(aspect).toLanguageKey("aspect"), aspect);
-	}
 
 	private static BlockBehaviour.Properties properties() {
 		return BlockBehaviour.Properties.of().strength(3.0F, 6.0F).sound(SoundType.COPPER).noLootTable()

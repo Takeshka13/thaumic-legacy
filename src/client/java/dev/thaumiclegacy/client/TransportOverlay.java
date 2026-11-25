@@ -2,6 +2,8 @@ package dev.thaumiclegacy.client;
 
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.revealing.TransportReadoutPayload;
+import dev.thaumiclegacy.revealing.RevealingPayload;
+import java.util.Optional;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -117,10 +119,8 @@ final class TransportOverlay {
 		return sides.getSiblings().isEmpty() ? Component.translatable(KEY + "none") : sides;
 	}
 
-	private static Component aspect(String id) {
-		ResourceLocation key = ResourceLocation.tryParse(id);
-		return id.isEmpty() || key == null ? Component.translatable(KEY + "none")
-			: Component.translatableWithFallback(key.toLanguageKey("aspect"), key.getPath());
+	private static Component aspect(Optional<RevealingPayload.AspectAmount> aspect) {
+		return aspect.map(RevealingPayload.AspectAmount::name).orElseGet(() -> Component.translatable(KEY + "none"));
 	}
 
 	void clear() {

@@ -148,6 +148,20 @@
       "translation": "screen.thaumiclegacy.journal.automated_alchemy",
       "gate": "aspect:thaumiclegacy:potentia",
       "parents": ["thaumiclegacy:alchemical_centrifuge", "thaumiclegacy:warded_jar_labels"]
+    },
+    {
+      "id": "thaumiclegacy:infernal_furnace",
+      "category": "thaumiclegacy:artifice",
+      "translation": "screen.thaumiclegacy.journal.infernal_furnace",
+      "gate": "always",
+      "parents": ["thaumiclegacy:arcane_foundations", "thaumiclegacy:wand_charging"]
+    },
+    {
+      "id": "thaumiclegacy:arcane_bellows",
+      "category": "thaumiclegacy:artifice",
+      "translation": "screen.thaumiclegacy.journal.arcane_bellows",
+      "gate": "always",
+      "parents": ["thaumiclegacy:infernal_furnace"]
     }
   ]
 }

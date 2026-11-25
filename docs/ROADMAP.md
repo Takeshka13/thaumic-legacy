@@ -28,7 +28,7 @@ Public API compatibility remains an architectural option. A public API release, 
 
 ## Planned multiblock structures
 
-- **Infernal Furnace** is an advanced smelting structure with explicit assembly, input and output rules, and recoverable teardown.
+- [**Infernal Furnace**](INFERNAL_FURNACE.md) forms a transformed shell with wand activation, fuel-free smelting, bellows, optional Ignis transport, and recoverable teardown. Automation and balance remain future work.
 - **Infusion Altar** centers on a **Runic Matrix** above an **Arcane Pedestal**, with surrounding **Arcane Pedestals** for ingredients. It depends on reliable stored essentia. Its design needs typed essentia consumption during a ritual, visible stability and instability, and recoverable failure consequences such as displaced ingredients or local Flux.
 - **Golem Press** follows infusion and component crafting. Assembly consumes its inputs once, with a clear recovery path if the structure or power supply is interrupted.
 
@@ -64,7 +64,7 @@ The foundation is functional and locally verified. The server stores one indepen
 
 ### Arcane Workbench
 
-The first magical crafting loop connects Thaumometer observations, Lux discovery, the Research Journal, and local Vis. A persistent shared grid supports three recipes, including the Aura Surveyor for comparing neighboring chunks. Local verification covers exact Vis charges, rejection of replayed requests, and preservation of the grid and aura after a dedicated-server restart. The two-real-client scenario remains open. See [Arcane Workbench](ARCANE_WORKBENCH.md) and [Arcane Workbench Testing](ARCANE_WORKBENCH_TESTING.md).
+The first magical crafting loop connects Thaumometer observations, Lux discovery, the Research Journal, and local Vis. A persistent shared grid supports recipes for components and researched equipment. The Thaumometer handles aura comparison directly. Local verification covers exact Vis charges, rejection of replayed requests, and preservation of the grid and aura after a dedicated-server restart. The two-real-client scenario remains open. See [Arcane Workbench](ARCANE_WORKBENCH.md) and [Arcane Workbench Testing](ARCANE_WORKBENCH_TESTING.md).
 
 ### Alchemy Foundation
 

@@ -8,17 +8,13 @@ import dev.thaumiclegacy.aspect.AspectCatalog;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 
-import java.util.List;
 
 public final class EssentiaPhial extends Item {
 	public static final int CAPACITY = 8;
-	private static final String TOOLTIP = "tooltip.thaumiclegacy.essentia_phial.";
 	private static final Contents EMPTY = new Contents("", 0);
 	private static final Codec<Contents> CODEC = RecordCodecBuilder.<Contents>create(instance -> instance.group(
 			Codec.STRING.fieldOf("aspect").forGetter(Contents::aspect),
@@ -43,14 +39,6 @@ public final class EssentiaPhial extends Item {
 		} else {
 			stack.set(CONTENTS, new Contents(aspect, amount));
 		}
-	}
-
-	@Override
-	public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-		Contents contents = contents(stack);
-		tooltip.add(contents.isEmpty() ? Component.translatable(TOOLTIP + "empty")
-				: Component.translatable(TOOLTIP + "filled", EssentiaLogistics.aspectName(contents.aspect()),
-						contents.amount(), CAPACITY));
 	}
 
 	public record Contents(String aspect, int amount) {

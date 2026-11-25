@@ -1,0 +1,25 @@
+{
+  "type": "thaumiclegacy:arcane_workbench",
+  "pattern": [
+    " C ",
+    "LPL",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "thaumiclegacy:resonant_copper"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:arcane_bellows",
+    "count": 1
+  },
+  "vis_cost": 20,
+  "research": "thaumiclegacy:arcane_bellows"
+}

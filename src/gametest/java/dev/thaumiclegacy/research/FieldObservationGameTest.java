@@ -49,9 +49,13 @@ import net.minecraft.world.phys.Vec3;
 public class FieldObservationGameTest implements FabricGameTest {
     @GameTest(template = EMPTY_STRUCTURE)
     public void crafting(GameTestHelper test) {
-        checkRecipe(test, "field_lens", CraftingInput.of(3, 3, List.of(
+        for (String legacy : List.of("field_lens", "attuned_lens", "aura_surveyor")) {
+            test.assertTrue(test.getLevel().getRecipeManager().byKey(ThaumicLegacy.id(legacy)).isEmpty(),
+                "Legacy tool has no recipe: " + legacy);
+        }
+        checkRecipe(test, "thaumometer", CraftingInput.of(3, 3, List.of(
             ItemStack.EMPTY, new ItemStack(Items.COPPER_INGOT), ItemStack.EMPTY,
-            new ItemStack(Items.COPPER_INGOT), new ItemStack(Items.AMETHYST_SHARD), new ItemStack(Items.GLASS_PANE),
+            new ItemStack(Items.GLASS_PANE), new ItemStack(Items.AMETHYST_SHARD), new ItemStack(Items.GLASS_PANE),
             ItemStack.EMPTY, new ItemStack(Items.COPPER_INGOT), ItemStack.EMPTY)));
         checkRecipe(test, "research_journal", CraftingInput.of(2, 1, List.of(
             new ItemStack(Items.BOOK), new ItemStack(Items.COPPER_INGOT))));
@@ -231,7 +235,8 @@ public class FieldObservationGameTest implements FabricGameTest {
         var initial = ResearchJournalItem.snapshot(player);
         test.assertValueEqual(specimens(initial), List.of("block:stone"), "Thaumometer records a block in the existing journal");
         observe(player, torch, 1.1);
-        test.assertValueEqual(ResearchJournalItem.snapshot(player), initial, "Thaumometer cooldown prevents a second immediate scan");
+        test.assertTrue(ResearchJournalItem.snapshot(player).unlocked(),
+            "The aura readout cooldown does not suppress a second observation");
 
         test.runAfterDelay(9, () -> {
             elapseMockCooldown(player);

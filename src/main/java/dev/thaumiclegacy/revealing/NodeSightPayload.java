@@ -10,18 +10,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import java.util.List;
 import java.util.Optional;
 
-public record NodeSightPayload(boolean worn, List<NodeMarker> nearby, Optional<NodeReading> focus) implements CustomPacketPayload {
-	static final int MAX_MARKERS = 5;
+public record NodeSightPayload(boolean worn, Optional<NodeReading> focus) implements CustomPacketPayload {
 	public static final Type<NodeSightPayload> TYPE = new Type<>(ThaumicLegacy.id("node_sight"));
 	public static final StreamCodec<RegistryFriendlyByteBuf, NodeSightPayload> STREAM_CODEC = StreamCodec.composite(
 		ByteBufCodecs.BOOL, NodeSightPayload::worn,
-		NodeMarker.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_MARKERS)), NodeSightPayload::nearby,
 		ByteBufCodecs.optional(NodeReading.STREAM_CODEC), NodeSightPayload::focus,
 		NodeSightPayload::new);
-
-	public NodeSightPayload {
-		nearby = List.copyOf(nearby);
-	}
 
 	@Override
 	public Type<NodeSightPayload> type() {
@@ -38,7 +32,7 @@ public record NodeSightPayload(boolean worn, List<NodeMarker> nearby, Optional<N
 	public record NodeReading(NodeMarker marker, List<NodeReserve> reserves) {
 		private static final StreamCodec<RegistryFriendlyByteBuf, NodeReading> STREAM_CODEC = StreamCodec.composite(
 			NodeMarker.STREAM_CODEC, NodeReading::marker,
-			NodeReserve.STREAM_CODEC.apply(ByteBufCodecs.list(6)), NodeReading::reserves,
+			NodeReserve.STREAM_CODEC.apply(ByteBufCodecs.list(RevealingPayload.MAX_ASPECTS)), NodeReading::reserves,
 			NodeReading::new);
 
 		public NodeReading {
@@ -46,10 +40,9 @@ public record NodeSightPayload(boolean worn, List<NodeMarker> nearby, Optional<N
 		}
 	}
 
-	public record NodeReserve(String aspectKey, int amount, int capacity) {
+	public record NodeReserve(RevealingPayload.AspectAmount aspect, int capacity) {
 		private static final StreamCodec<RegistryFriendlyByteBuf, NodeReserve> STREAM_CODEC = StreamCodec.composite(
-			ByteBufCodecs.stringUtf8(48), NodeReserve::aspectKey,
-			ByteBufCodecs.VAR_INT, NodeReserve::amount,
+			RevealingPayload.AspectAmount.STREAM_CODEC, NodeReserve::aspect,
 			ByteBufCodecs.VAR_INT, NodeReserve::capacity,
 			NodeReserve::new);
 	}

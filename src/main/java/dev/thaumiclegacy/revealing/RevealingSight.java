@@ -4,16 +4,17 @@ import dev.thaumiclegacy.alchemy.Alchemy;
 import dev.thaumiclegacy.advanced.AlchemicalCentrifugeBlockEntity;
 import dev.thaumiclegacy.advanced.ThaumatoriumBlockEntity;
 import dev.thaumiclegacy.alchemy.CrucibleBlockEntity;
-import dev.thaumiclegacy.aspect.AspectCatalog;
+import dev.thaumiclegacy.research.ResearchProgress;
 import dev.thaumiclegacy.aura.ThaumometerItem;
 import dev.thaumiclegacy.logistics.EssentiaFurnaceBlockEntity;
 import dev.thaumiclegacy.logistics.EssentiaStorageBlockEntity;
-import dev.thaumiclegacy.node.AuraNodeBlock;
 import dev.thaumiclegacy.node.AuraNodeBlockEntity;
 import dev.thaumiclegacy.node.AuraNodes;
 import dev.thaumiclegacy.transport.EssentiaTransport;
 import dev.thaumiclegacy.wand.WandVis;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
@@ -33,12 +34,18 @@ import java.util.UUID;
 public final class RevealingSight {
 	private static final int UPDATE_INTERVAL = 10;
 	private static final double MAX_GOGGLES_RANGE = 6.0;
-	private static final int NODE_SIGHT_RANGE = 24;
 
 	private RevealingSight() {
 	}
 
 	public static void register(Item goggles) {
+		PayloadTypeRegistry.playS2C().register(AspectTooltipPayload.TYPE, AspectTooltipPayload.STREAM_CODEC);
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> AspectTooltipPayload.sync(handler.player));
+		ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+			if (success) {
+				server.getPlayerList().getPlayers().forEach(AspectTooltipPayload::sync);
+			}
+		});
 		PayloadTypeRegistry.playS2C().register(RevealingPayload.TYPE, RevealingPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(NodeSightPayload.TYPE, NodeSightPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(LogisticsReadoutPayload.TYPE, LogisticsReadoutPayload.STREAM_CODEC);
@@ -66,7 +73,7 @@ public final class RevealingSight {
 			return false;
 		}
 		if (ServerPlayNetworking.canSend(player, RevealingPayload.TYPE)) {
-			ServerPlayNetworking.send(player, new RevealingPayload(pos, false, 0, false, Optional.of(contents(crucible))));
+			ServerPlayNetworking.send(player, new RevealingPayload(pos, false, 0, false, Optional.of(contents(player, crucible))));
 		}
 		return true;
 	}
@@ -78,7 +85,7 @@ public final class RevealingSight {
 		}
 		var snapshot = node.snapshot();
 		if (ServerPlayNetworking.canSend(player, NodeSightPayload.TYPE)) {
-			ServerPlayNetworking.send(player, new NodeSightPayload(false, List.of(), Optional.of(nodeReading(snapshot))));
+			ServerPlayNetworking.send(player, new NodeSightPayload(false, Optional.of(nodeReading(player, snapshot))));
 		}
 		return Optional.of(snapshot.id());
 	}
@@ -98,8 +105,9 @@ public final class RevealingSight {
 		}
 		if (ServerPlayNetworking.canSend(player, TransportReadoutPayload.TYPE)) {
 			var view = reading.orElseThrow();
-			ServerPlayNetworking.send(player, new TransportReadoutPayload(pos, worn, view.aspect(), view.amount(),
-					view.connections(), view.status().name().toLowerCase(Locale.ROOT), view.filter()));
+			ServerPlayNetworking.send(player, new TransportReadoutPayload(pos, worn,
+					optionalAspect(player, view.aspect(), view.amount()), view.amount(), view.connections(),
+					view.status().name().toLowerCase(Locale.ROOT), optionalAspect(player, view.filter(), 0)));
 		}
 		return true;
 	}
@@ -114,17 +122,17 @@ public final class RevealingSight {
 		if (entity instanceof EssentiaStorageBlockEntity storage) {
 			var view = storage.snapshot();
 			reading = new LogisticsReadoutPayload(pos, worn, "storage", view.amount(), view.capacity(),
-					aspectAmounts(view.aspects()), 0, 0, 0);
+					aspectAmounts(player, view.aspects()), 0, 0, 0);
 		} else if (entity instanceof EssentiaFurnaceBlockEntity furnace) {
 			var view = furnace.snapshot();
 			reading = new LogisticsReadoutPayload(pos, worn, view.state().name().toLowerCase(Locale.ROOT),
 					0, 0, List.of(), view.progress(), view.duration(), view.burnTicks());
 		} else if (entity instanceof AlchemicalCentrifugeBlockEntity centrifuge) {
 			var view = centrifuge.snapshot();
-			reading = machineReading(pos, worn, view.status().name(), view.output(), view.outputCapacity(), view.progress(), view.duration());
+			reading = machineReading(player, pos, worn, view.status().name(), view.output(), view.outputCapacity(), view.progress(), view.duration());
 		} else if (entity instanceof ThaumatoriumBlockEntity thaumatorium) {
 			var view = thaumatorium.snapshot();
-			reading = machineReading(pos, worn, view.status().name(), view.essentia(), view.capacity(), view.progress(), view.duration());
+			reading = machineReading(player, pos, worn, view.status().name(), view.essentia(), view.capacity(), view.progress(), view.duration());
 		} else {
 			return false;
 		}
@@ -134,16 +142,16 @@ public final class RevealingSight {
 		return true;
 	}
 
-	private static LogisticsReadoutPayload machineReading(BlockPos pos, boolean worn, String status, Map<String, Integer> contents,
+	private static LogisticsReadoutPayload machineReading(ServerPlayer player, BlockPos pos, boolean worn, String status, Map<String, Integer> contents,
 			int capacity, int progress, int duration) {
 		int amount = contents.values().stream().mapToInt(Integer::intValue).sum();
 		return new LogisticsReadoutPayload(pos, worn, status.toLowerCase(Locale.ROOT), amount, capacity,
-				aspectAmounts(contents), progress, duration, 0);
+				aspectAmounts(player, contents), progress, duration, 0);
 	}
 
 	private static void revealFocus(ServerPlayer player, boolean worn) {
 		boolean readNodes = ServerPlayNetworking.canSend(player, NodeSightPayload.TYPE);
-		boolean revealBlocks = worn && ServerPlayNetworking.canSend(player, RevealingPayload.TYPE);
+		boolean revealBlocks = ServerPlayNetworking.canSend(player, RevealingPayload.TYPE);
 		boolean readTransport = ServerPlayNetworking.canSend(player, TransportReadoutPayload.TYPE);
 		if (!readNodes && !revealBlocks && !readTransport) {
 			return;
@@ -151,18 +159,14 @@ public final class RevealingSight {
 		var level = player.serverLevel();
 		var focus = visibleBlock(player);
 		if (readNodes) {
-			List<NodeSightPayload.NodeMarker> nearby = worn
-				? AuraNodes.nearby(level, player.blockPosition(), NODE_SIGHT_RANGE, NodeSightPayload.MAX_MARKERS)
-				.stream().map(node -> new NodeSightPayload.NodeMarker(node.getBlockPos(),
-					node.getBlockState().getValue(AuraNodeBlock.VARIANT).getSerializedName())).toList() : List.of();
 			Optional<NodeSightPayload.NodeReading> nodeReading = focus
 				.filter(pos -> level.getBlockState(pos).is(AuraNodes.BLOCK))
 				.map(level::getBlockEntity)
 				.filter(AuraNodeBlockEntity.class::isInstance)
 				.map(AuraNodeBlockEntity.class::cast)
-				.map(node -> nodeReading(node.snapshot()));
-			if (!nearby.isEmpty() || nodeReading.isPresent()) {
-				ServerPlayNetworking.send(player, new NodeSightPayload(worn, nearby, nodeReading));
+				.map(node -> nodeReading(player, node.snapshot()));
+			if (nodeReading.isPresent()) {
+				ServerPlayNetworking.send(player, new NodeSightPayload(worn, nodeReading));
 			}
 		}
 		if (focus.isEmpty()) {
@@ -173,7 +177,7 @@ public final class RevealingSight {
 		if (!revealBlocks) {
 			return;
 		}
-		if (revealLogistics(player, pos, true)) {
+		if (revealLogistics(player, pos, worn)) {
 			return;
 		}
 		if (transport) {
@@ -184,9 +188,9 @@ public final class RevealingSight {
 		boolean heat = Alchemy.providesHeat(state);
 		Optional<RevealingPayload.CrucibleContents> mixture = state.is(Alchemy.CRUCIBLE)
 				&& level.getBlockEntity(pos) instanceof CrucibleBlockEntity crucible
-			? Optional.of(contents(crucible)) : Optional.empty();
+			? Optional.of(contents(player, crucible)) : Optional.empty();
 		if (!state.is(AuraNodes.BLOCK) && (light != 0 || heat || mixture.isPresent())) {
-			ServerPlayNetworking.send(player, new RevealingPayload(pos, true, light, heat, mixture));
+			ServerPlayNetworking.send(player, new RevealingPayload(pos, worn, light, heat, mixture));
 		}
 	}
 
@@ -204,30 +208,33 @@ public final class RevealingSight {
 		return Optional.of(hit.getBlockPos());
 	}
 
-	private static NodeSightPayload.NodeReading nodeReading(AuraNodeBlockEntity.Snapshot snapshot) {
+	private static NodeSightPayload.NodeReading nodeReading(ServerPlayer player, AuraNodeBlockEntity.Snapshot snapshot) {
 		var marker = new NodeSightPayload.NodeMarker(snapshot.position(), snapshot.variant().getSerializedName());
+		var known = ResearchProgress.knownAspects(player);
 		var reserves = Arrays.stream(WandVis.Primal.values())
-			.map(primal -> new NodeSightPayload.NodeReserve(primal.translationKey(), snapshot.reserve(primal), snapshot.capacity(primal)))
+			.filter(primal -> snapshot.capacity(primal) > 0)
+			.map(primal -> new NodeSightPayload.NodeReserve(
+				RevealingPayload.AspectAmount.visible(primal.aspectId(), snapshot.reserve(primal), known), snapshot.capacity(primal)))
 			.toList();
 		return new NodeSightPayload.NodeReading(marker, reserves);
 	}
 
-	private static RevealingPayload.CrucibleContents contents(CrucibleBlockEntity crucible) {
+	private static RevealingPayload.CrucibleContents contents(ServerPlayer player, CrucibleBlockEntity crucible) {
 		var snapshot = crucible.snapshot();
 		return new RevealingPayload.CrucibleContents(snapshot.phase().getSerializedName(), snapshot.amount(), snapshot.capacity(),
-				aspectAmounts(snapshot.aspects()));
+				aspectAmounts(player, snapshot.aspects()));
 	}
 
-	private static List<RevealingPayload.AspectAmount> aspectAmounts(Map<String, Integer> aspects) {
-		var definitions = AspectCatalog.current().definitions();
+	private static Optional<RevealingPayload.AspectAmount> optionalAspect(ServerPlayer player, String id, int amount) {
+		return id.isEmpty() ? Optional.empty()
+			: Optional.of(RevealingPayload.AspectAmount.visible(id, amount, ResearchProgress.knownAspects(player)));
+	}
+
+	private static List<RevealingPayload.AspectAmount> aspectAmounts(ServerPlayer player, Map<String, Integer> aspects) {
+		var known = ResearchProgress.knownAspects(player);
 		return aspects.entrySet().stream()
 			.sorted(Map.Entry.comparingByKey())
 			.limit(RevealingPayload.MAX_ASPECTS)
-			.map(entry -> {
-				var aspect = definitions.get(entry.getKey());
-				return aspect == null
-					? new RevealingPayload.AspectAmount(entry.getKey(), entry.getValue(), 0xA29179, -1)
-					: new RevealingPayload.AspectAmount(entry.getKey(), entry.getValue(), aspect.color(), aspect.glyph());
-			}).toList();
+			.map(entry -> RevealingPayload.AspectAmount.visible(entry.getKey(), entry.getValue(), known)).toList();
 	}
 }

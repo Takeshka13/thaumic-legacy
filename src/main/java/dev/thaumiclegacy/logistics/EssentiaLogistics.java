@@ -82,9 +82,6 @@ public final class EssentiaLogistics {
 		return Component.translatable(MESSAGE + key, arguments);
 	}
 
-	static Component aspectName(String id) {
-		return Component.translatableWithFallback(ResourceLocation.parse(id).toLanguageKey("aspect"), id);
-	}
 
 	static boolean feedback(ServerPlayer player, boolean accepted, String key, Object... arguments) {
 		player.displayClientMessage(text(key, arguments), true);

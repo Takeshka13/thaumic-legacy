@@ -1,7 +1,13 @@
 package dev.thaumiclegacy.aura;
 
 import dev.thaumiclegacy.ThaumicLegacy;
+import dev.thaumiclegacy.aspect.AspectCatalog;
+import dev.thaumiclegacy.revealing.RevealingPayload;
 import java.util.List;
+import java.util.Set;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -18,6 +24,39 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 
 public class AuraGameTest implements FabricGameTest {
+    @GameTest(template = EMPTY_STRUCTURE)
+    @SuppressWarnings("removal")
+    public void legacyInstrumentsExchangeWithoutLosingComponents(GameTestHelper test) {
+        var inventory = test.makeMockServerPlayerInLevel().getInventory();
+        var item = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("thaumometer"));
+        var oldItem = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("attuned_lens"));
+        var legacy = new ItemStack(oldItem, 2);
+        var customName = Component.literal("Archive optics");
+        legacy.set(DataComponents.CUSTOM_NAME, customName);
+        inventory.setItem(0, legacy);
+        ThaumometerItem.exchangeLegacy(inventory, item, Set.of(oldItem));
+        ThaumometerItem.exchangeLegacy(inventory, item, Set.of(oldItem));
+        test.assertValueEqual(inventory.countItem(item), 2, "Both old instruments are replaced exactly once");
+        test.assertValueEqual(inventory.countItem(oldItem), 0, "No migrated instrument remains");
+        test.assertValueEqual(inventory.getItem(0).get(DataComponents.CUSTOM_NAME), customName, "Original name is kept");
+        test.assertValueEqual(inventory.getItem(1).get(DataComponents.CUSTOM_NAME), customName, "Split copy keeps the name");
+        test.succeed();
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE)
+    public void revealingUsesCatalogColorsAndMasksUnknownAspects(GameTestHelper test) {
+        for (var entry : AspectCatalog.current().definitions().entrySet()) {
+            var known = RevealingPayload.AspectAmount.visible(entry.getKey(), 7, Set.of(entry.getKey()));
+            var hidden = RevealingPayload.AspectAmount.visible(entry.getKey(), 7, Set.of());
+            test.assertValueEqual(known.name().getStyle().getColor().getValue(), entry.getValue().color(),
+                    "Each known aspect uses its catalog color");
+            test.assertValueEqual(known.glyph(), entry.getValue().glyph(), "Each known aspect uses its catalog glyph");
+            test.assertTrue(hidden.id().isEmpty() && hidden.glyph() == -1 && hidden.name().getStyle().getColor() == null,
+                    "Unknown aspect identity, color and glyph are concealed");
+            test.assertValueEqual(hidden.amount(), 7, "Masking preserves the amount");
+        }
+        test.succeed();
+    }
     @GameTest(template = EMPTY_STRUCTURE)
     public void spendsAndBoundsAuraBalances(GameTestHelper test) {
         var level = test.getLevel();

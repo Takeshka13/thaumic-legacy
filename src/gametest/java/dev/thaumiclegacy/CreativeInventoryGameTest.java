@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class CreativeInventoryGameTest implements FabricGameTest {
 	@GameTest(template = EMPTY_STRUCTURE)
-	public void tabContainsEveryRegisteredModItemOnce(GameTestHelper test) {
+	public void tabContainsEveryAvailableModItemOnce(GameTestHelper test) {
 		var tabId = ThaumicLegacy.id("main");
 		test.assertTrue(BuiltInRegistries.CREATIVE_MODE_TAB.containsKey(tabId), "Creative tab must be registered");
 		var tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(tabId);
@@ -20,6 +20,11 @@ public class CreativeInventoryGameTest implements FabricGameTest {
 		var entries = tab.getDisplayItems().stream().map(ItemStack::getItem).map(BuiltInRegistries.ITEM::getKey).toList();
 		var registeredItems = BuiltInRegistries.ITEM.keySet().stream()
 				.filter(id -> id.getNamespace().equals(ThaumicLegacy.MOD_ID)).collect(Collectors.toSet());
+		for (String legacy : new String[] {"field_lens", "aura_surveyor", "attuned_lens"}) {
+			var id = ThaumicLegacy.id(legacy);
+			test.assertTrue(registeredItems.remove(id), "Legacy instrument remains registered: " + id);
+			test.assertTrue(!entries.contains(id), "Legacy instrument stays out of the creative tab: " + id);
+		}
 		test.assertTrue(tab.shouldDisplay(), "The tab must be visible");
 		test.assertValueEqual(new HashSet<>(entries), registeredItems, "Tab contents match registered mod items");
 		test.assertValueEqual(entries.size(), registeredItems.size(), "Each item is listed once");

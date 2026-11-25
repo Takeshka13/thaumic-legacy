@@ -7,7 +7,7 @@ The existing Alchemical Furnace, Arcane Alembic, Warded Jar, phials, transportat
 | Warded Jar Labels | Warded Jars and Vitreus | Four blank labels for 4 Vis. Put an ink sac below the top middle paper, between two papers. |
 | Improved Distillation | Valves and Filtering | Journal guidance for stacking existing alembics. The mechanical upgrade also works for previously placed furnaces. |
 | Alchemical Centrifuge | Improved Distillation and Motus | Centrifuge for 24 Vis. Copper above an alembic, a tube on either side of the alembic, and Resonant Copper below. |
-| Automated Alchemy | Alchemical Centrifuge, Warded Jar Labels, and Potentia | Thaumatorium for 32 Vis. Attuned Lens on top. Crucible between two Resonant Copper in the middle. Alchemical Furnace between two valves below. |
+| Automated Alchemy | Alchemical Centrifuge, Warded Jar Labels, and Potentia | Thaumatorium for 32 Vis. Thaumometer on top. Crucible between two Resonant Copper in the middle. Alchemical Furnace between two valves below. |
 
 ## Centrifuge
 

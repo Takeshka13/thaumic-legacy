@@ -37,27 +37,19 @@ C
 
 `R` is redstone dust and `C` is a copper ingot.
 
-### Attuned Lens
+### Arcane Bellows
 
-Costs 16 Vis. Requires Arcane Foundations.
-
-```text
-GAG
-.R.
-```
-
-`G` is a glass pane, `A` is an amethyst shard, and `R` is Resonant Copper.
-
-### Aura Surveyor
-
-Costs 60 Vis. Requires Arcane Foundations.
+Costs 20 Vis. Requires Arcane Bellows research, which follows Infernal Furnace.
 
 ```text
-.L.
-RTP
+.C.
+LPL
+.C.
 ```
 
-`L` is an Attuned Lens, `R` is Resonant Copper, `T` is a Thaumometer, and `P` is a copper ingot. Crafting the Surveyor and both arcane components from scratch spends 92 Vis. Right-click with the Surveyor to print the Vis, capacity, and Flux of the current chunk and the four cardinal neighbors. The server reads the aura ledger without force-loading chunks. A reading costs zero Vis.
+`C` is Resonant Copper, `L` is leather, and `P` is a piston. See [Infernal Furnace](INFERNAL_FURNACE.md) for attachment and speed rules.
+
+The former Attuned Lens and Aura Surveyor recipes were retired when the Thaumometer took over aura readings.
 
 ## Recipe data
 

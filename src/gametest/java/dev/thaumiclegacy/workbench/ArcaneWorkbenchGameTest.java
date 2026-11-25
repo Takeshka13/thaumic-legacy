@@ -56,12 +56,13 @@ public class ArcaneWorkbenchGameTest implements FabricGameTest {
 
         checkArcaneRecipe(test, "resonant_copper", 8, false, CraftingInput.of(1, 2, List.of(
             stack(Items.REDSTONE), stack(Items.COPPER_INGOT))));
-        checkArcaneRecipe(test, "attuned_lens", 16, true, CraftingInput.of(3, 2, List.of(
-            stack(Items.GLASS_PANE), stack(Items.AMETHYST_SHARD), stack(Items.GLASS_PANE),
+        checkArcaneRecipe(test, "goggles_of_revealing", 24, true, CraftingInput.of(3, 2, List.of(
+            stack(item("thaumometer")), ItemStack.EMPTY, stack(item("thaumometer")),
+            stack(Items.LEATHER), stack(Items.LEATHER), stack(Items.LEATHER))));
+        checkArcaneRecipe(test, "arcane_bellows", 20, true, CraftingInput.of(3, 3, List.of(
+            ItemStack.EMPTY, stack(item("resonant_copper")), ItemStack.EMPTY,
+            stack(Items.LEATHER), stack(Items.PISTON), stack(Items.LEATHER),
             ItemStack.EMPTY, stack(item("resonant_copper")), ItemStack.EMPTY)));
-        checkArcaneRecipe(test, "aura_surveyor", 60, true, CraftingInput.of(3, 2, List.of(
-            ItemStack.EMPTY, stack(item("attuned_lens")), ItemStack.EMPTY,
-            stack(item("resonant_copper")), stack(item("thaumometer")), stack(Items.COPPER_INGOT))));
         test.succeed();
     }
 
@@ -131,7 +132,7 @@ public class ArcaneWorkbenchGameTest implements FabricGameTest {
         var bench = new Fixture(test);
         var first = bench.newPlayer(test);
         var second = bench.newPlayer(test);
-        bench.attunedIngredients();
+        bench.gogglesIngredients();
         observeStoneAndTorch(test, first);
         test.assertFalse(ResearchProgress.isUnlocked(first, ResearchProgress.ARCANE_FOUNDATIONS),
             "Stone and torch complete the first milestone but cannot reveal Lux alone");
@@ -149,25 +150,9 @@ public class ArcaneWorkbenchGameTest implements FabricGameTest {
         test.assertFalse(secondMenu.craft(second, secondMenu.attemptToken()), "Another player cannot use the same recipe");
         firstMenu = bench.open(first);
         test.assertTrue(firstMenu.craft(first, firstMenu.attemptToken()), "The qualified player can craft");
-        test.assertValueEqual(bench.vis(), 84, "Attuned Lens costs sixteen Vis");
-        test.assertValueEqual(count(first, item("attuned_lens")), 1, "Qualified player receives an Attuned Lens");
-        test.assertValueEqual(count(second, item("attuned_lens")), 0, "Unqualified player receives no item");
-
-        // Feed the lens the first player actually crafted into the advanced recipe.
-        for (int i = 0; i < first.getInventory().items.size(); i++) {
-            if (first.getInventory().getItem(i).is(item("attuned_lens"))) {
-                bench.entity().grid().setItem(1, first.getInventory().removeItem(i, 1));
-                break;
-            }
-        }
-        bench.entity().grid().setItem(3, stack(item("resonant_copper")));
-        bench.entity().grid().setItem(4, stack(item("thaumometer")));
-        bench.entity().grid().setItem(5, stack(Items.COPPER_INGOT));
-        firstMenu.broadcastChanges();
-        test.assertValueEqual(firstMenu.visCost(), 60, "Aura Surveyor preview shows its sixty-Vis cost");
-        test.assertTrue(firstMenu.craft(first, firstMenu.attemptToken()), "The qualified player can craft an Aura Surveyor");
-        test.assertValueEqual(bench.vis(), 24, "Aura Surveyor spends exactly sixty Vis");
-        test.assertValueEqual(count(first, item("aura_surveyor")), 1, "The Aura Surveyor enters the player's inventory");
+        test.assertValueEqual(bench.vis(), 76, "Revealing goggles cost twenty-four Vis");
+        test.assertValueEqual(count(first, item("goggles_of_revealing")), 1, "Qualified player receives goggles");
+        test.assertValueEqual(count(second, item("goggles_of_revealing")), 0, "Unqualified player receives no item");
         test.assertTrue(bench.entity().grid().isEmpty(), "Advanced crafting consumes each grid input once");
         test.succeed();
     }
@@ -231,7 +216,8 @@ public class ArcaneWorkbenchGameTest implements FabricGameTest {
         var recipe = (ArcaneWorkbenchRecipe) holder.value();
         test.assertTrue(recipe.getType() == ArcaneWorkbench.RECIPE_TYPE, "Arcane recipes use their own recipe type");
         test.assertValueEqual(recipe.visCost(), cost, "Vis cost for " + path);
-        test.assertValueEqual(recipe.research(), gated ? Optional.of(ResearchProgress.ARCANE_FOUNDATIONS) : Optional.empty(),
+        test.assertValueEqual(recipe.research(), gated ? Optional.of(path.equals("arcane_bellows")
+                ? ResearchProgress.ARCANE_BELLOWS : ResearchProgress.ARCANE_FOUNDATIONS) : Optional.empty(),
             "Research requirement for " + path);
         test.assertTrue(recipe.matches(input, level), "Recipe accepts the documented shaped pattern");
         test.assertTrue(level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level).isEmpty(),
@@ -350,11 +336,12 @@ public class ArcaneWorkbenchGameTest implements FabricGameTest {
             entity.grid().setItem(4, new ItemStack(Items.COPPER_INGOT, count));
         }
 
-        private void attunedIngredients() {
-            entity.grid().setItem(0, stack(Items.GLASS_PANE));
-            entity.grid().setItem(1, stack(Items.AMETHYST_SHARD));
-            entity.grid().setItem(2, stack(Items.GLASS_PANE));
-            entity.grid().setItem(4, stack(item("resonant_copper")));
+        private void gogglesIngredients() {
+            entity.grid().setItem(0, stack(item("thaumometer")));
+            entity.grid().setItem(2, stack(item("thaumometer")));
+            entity.grid().setItem(3, stack(Items.LEATHER));
+            entity.grid().setItem(4, stack(Items.LEATHER));
+            entity.grid().setItem(5, stack(Items.LEATHER));
         }
     }
 }

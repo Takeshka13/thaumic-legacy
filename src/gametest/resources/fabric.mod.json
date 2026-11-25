@@ -15,7 +15,8 @@
       "dev.thaumiclegacy.node.AuraNodeGameTest",
       "dev.thaumiclegacy.logistics.EssentiaLogisticsGameTest",
       "dev.thaumiclegacy.transport.EssentiaTransportGameTest",
-      "dev.thaumiclegacy.advanced.AdvancedAlchemyGameTest"
+      "dev.thaumiclegacy.advanced.AdvancedAlchemyGameTest",
+      "dev.thaumiclegacy.furnace.InfernalFurnaceGameTest"
     ]
   },
   "depends": {

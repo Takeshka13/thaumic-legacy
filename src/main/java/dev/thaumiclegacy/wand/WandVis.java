@@ -44,8 +44,8 @@ public record WandVis(int aer, int aqua, int ignis, int terra, int ordo, int per
 			this.id = id;
 		}
 
-		public String translationKey() {
-			return ThaumicLegacy.id(id).toLanguageKey("aspect");
+		public String aspectId() {
+			return ThaumicLegacy.id(id).toString();
 		}
 	}
 
@@ -88,6 +88,24 @@ public record WandVis(int aer, int aqua, int ignis, int terra, int ordo, int per
 			return false;
 		}
 		wand.set(COMPONENT, vis.with(primal, current - requested));
+		return true;
+	}
+
+	public static boolean canSpend(ItemStack wand, WandVis cost) {
+		WandVis stored = get(wand);
+		return wand.getItem() instanceof WandItem && stored.aer >= cost.aer && stored.aqua >= cost.aqua
+				&& stored.ignis >= cost.ignis && stored.terra >= cost.terra && stored.ordo >= cost.ordo
+				&& stored.perditio >= cost.perditio;
+	}
+
+	public static boolean trySpend(ItemStack wand, WandVis cost) {
+		if (!canSpend(wand, cost)) {
+			return false;
+		}
+		WandVis stored = get(wand);
+		wand.set(COMPONENT, new WandVis(stored.aer - cost.aer, stored.aqua - cost.aqua,
+				stored.ignis - cost.ignis, stored.terra - cost.terra, stored.ordo - cost.ordo,
+				stored.perditio - cost.perditio));
 		return true;
 	}
 

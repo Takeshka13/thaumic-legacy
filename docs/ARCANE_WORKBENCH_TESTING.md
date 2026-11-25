@@ -12,11 +12,11 @@ The GameTest command runs the combined suite. The XML report is under `build/fie
 
 ## Single-player progression
 
-1. Craft a Field Lens and Research Journal. If commands are enabled, use `/give @s thaumiclegacy:field_lens` and `/give @s thaumiclegacy:research_journal`.
+1. Craft a Thaumometer and Research Journal. If commands are enabled, use `/give @s thaumiclegacy:thaumometer` and `/give @s thaumiclegacy:research_journal`.
 2. Scan stone and a torch. Comparing Specimens opens, while Arcane Foundations still needs Lux. Scan a feather by holding it in the offhand and crouching with the lens in the main hand. The torch evidence and newly discovered Aer reveal Lux. Reopen the journal to read the Arcane Foundations entry.
 3. Craft an Arcane Workbench at a regular crafting table. Put copper at top center, glass panes left and right of a regular crafting table in the middle row, and stone at bottom center. For troubleshooting use `/give @s thaumiclegacy:arcane_workbench`. Place the block and open it with right-click.
-4. Place redstone dust above copper in the workbench. Check that the result shows Resonant Copper and costs 8 Vis. Craft two units using two separate actions. Use two glass panes flanking an amethyst shard with Resonant Copper below the shard to craft an Attuned Lens for 16 Vis.
-5. Place the Attuned Lens above a Thaumometer, with Resonant Copper on the Thaumometer's left and a copper ingot on its right. Craft the Aura Surveyor for 60 Vis. Use it to survey the local chunk and the four adjacent chunks. Check the Vis reduction at the bench or with a second Thaumometer.
+4. Place redstone dust above copper in the workbench. Check that the result shows Resonant Copper and costs 8 Vis. Craft two units using two separate actions.
+5. Place a piston between two leather, with Resonant Copper above and below the piston. The Arcane Bellows recipe costs 20 Vis and requires the Arcane Bellows research. Verify that the locked recipe cannot be crafted, then unlock it and check the Vis reduction after crafting.
 6. Put only part of a recipe in the grid and check the explanation. Try a complete recipe with less Vis than its cost. Pollute the chunk with `/thaumiclegacy aura flux 80` to freeze recovery during this check. Verify that the attempt preserves the ingredients. Run `/thaumiclegacy aura clean 100` and wait for Vis to return, or restore it with the operator command.
 7. Fill all player inventory and hotbar slots without a compatible partial output stack. Verify that crafting is blocked and that neither Vis nor ingredients are consumed. Free a slot, craft once, and verify that exactly one recipe result arrives.
 8. Close the interface with ingredients still in the grid. Save and restart the world, then check the grid, local Vis and research. Break the block and check that its stored ingredients drop once. Compare both languages at GUI Scale 2 and Auto, including a locked recipe and the insufficient Vis state.

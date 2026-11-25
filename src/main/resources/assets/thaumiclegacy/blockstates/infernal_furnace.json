@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "thaumiclegacy:block/infernal_furnace" },
+    "facing=east": { "model": "thaumiclegacy:block/infernal_furnace", "y": 90 },
+    "facing=south": { "model": "thaumiclegacy:block/infernal_furnace", "y": 180 },
+    "facing=west": { "model": "thaumiclegacy:block/infernal_furnace", "y": 270 }
+  }
+}

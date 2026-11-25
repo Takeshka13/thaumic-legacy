@@ -2,7 +2,7 @@
   "aspects": [
     {"id": "thaumiclegacy:aer", "parents": [], "color": "#F2D582", "glyph": 0},
     {"id": "thaumiclegacy:aqua", "parents": [], "color": "#5BD5F1", "glyph": 1},
-    {"id": "thaumiclegacy:ignis", "parents": [], "color": "#FF8450", "glyph": 2},
+    {"id": "thaumiclegacy:ignis", "parents": [], "color": "#FF594D", "glyph": 2},
     {"id": "thaumiclegacy:terra", "parents": [], "color": "#D7AA72", "glyph": 3},
     {"id": "thaumiclegacy:ordo", "parents": [], "color": "#C3B9FF", "glyph": 4},
     {"id": "thaumiclegacy:perditio", "parents": [], "color": "#C6A3BD", "glyph": 5},
