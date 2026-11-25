@@ -65,7 +65,7 @@ public record RevealingPayload(BlockPos pos, boolean worn, int light, boolean he
 			return Component.translatableWithFallback(key.toLanguageKey("aspect"), key.getPath()).withColor(color);
 		}
 
-		static final StreamCodec<RegistryFriendlyByteBuf, AspectAmount> STREAM_CODEC = StreamCodec.composite(
+		public static final StreamCodec<RegistryFriendlyByteBuf, AspectAmount> STREAM_CODEC = StreamCodec.composite(
 			ByteBufCodecs.stringUtf8(AspectCatalog.MAX_ID_LENGTH), AspectAmount::id,
 			ByteBufCodecs.VAR_INT, AspectAmount::amount,
 			ByteBufCodecs.INT, AspectAmount::color,

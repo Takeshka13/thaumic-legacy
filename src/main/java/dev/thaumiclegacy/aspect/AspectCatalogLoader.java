@@ -110,6 +110,7 @@ final class AspectCatalogLoader {
 			case "block" -> registry = BuiltInRegistries.BLOCK;
 			case "item" -> registry = BuiltInRegistries.ITEM;
 			case "entity" -> registry = BuiltInRegistries.ENTITY_TYPE;
+			case "fluid" -> registry = BuiltInRegistries.FLUID;
 			default -> throw new JsonSyntaxException("Unknown assignment kind '" + kind + "'");
 		}
 		String targetId = readString(entry.get("target"), "target");

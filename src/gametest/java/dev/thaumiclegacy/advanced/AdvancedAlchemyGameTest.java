@@ -62,17 +62,18 @@ public class AdvancedAlchemyGameTest implements FabricGameTest {
         var line = new Line(test, AdvancedAlchemy.ALCHEMICAL_CENTRIFUGE);
         var centrifuge = line.centrifuge();
         var player = newPlayer(test);
+        var compounds = line.addSource(Direction.NORTH);
         line.deposit(player, AER, 1);
-        line.deposit(player, MORTUUS, 1);
-        test.assertTrue(line.transfer(), "Mortuus crosses the side input tube");
+        line.deposit(player, compounds, MORTUUS, 1);
+        test.assertTrue(line.transfer(compounds), "Mortuus crosses the side input tube");
         test.assertFalse(line.transfer(), "A primal cannot enter the centrifuge");
         test.assertValueEqual(line.sourceStock(), Map.of(AER, 1), "Rejected primal is retained at the source");
         test.assertValueEqual(centrifuge.snapshot().input(), Map.of(MORTUUS, 1), "Mortuus keeps its own ID");
         test.startSequence().thenWaitUntil(() -> test.assertValueEqual(centrifuge.snapshot().output(), Map.of(AQUA, 1, PERDITIO, 1),
             "Mortuus separates into both of its registered parents")).thenExecute(() -> {
                 test.assertTrue(centrifuge.snapshot().input().isEmpty(), "One committed cycle consumes exactly one compound");
-                line.deposit(player, VENENUM, 1);
-                test.assertTrue(line.transfer(), "Venenum remains independently routable");
+                line.deposit(player, compounds, VENENUM, 1);
+                test.assertTrue(line.transfer(compounds), "Venenum remains independently routable");
                 test.assertValueEqual(centrifuge.snapshot().input(), Map.of(VENENUM, 1),
                     "Venenum is stored as its exact ID despite its shared formula");
             }).thenWaitUntil(() -> test.assertValueEqual(centrifuge.snapshot().output(), Map.of(AQUA, 2, PERDITIO, 2),
@@ -142,12 +143,15 @@ public class AdvancedAlchemyGameTest implements FabricGameTest {
         test.assertTrue(wrong.is(Items.POISONOUS_POTATO), "A mismatched catalyst stays with the user");
         var held = use(owner, line.target(), new ItemStack(Items.REDSTONE, 2), false);
         test.assertTrue(held.is(Items.REDSTONE) && held.getCount() == 1, "Exactly one matching catalyst is queued");
+        var ignisSource = line.addSource(Direction.NORTH);
+        var perditioSource = line.addSource(Direction.SOUTH);
         line.deposit(owner, AER, 2);
-        line.deposit(owner, IGNIS, 4);
-        line.deposit(owner, PERDITIO, 1);
-        for (int i = 0; i < 5; i++) {
-            test.assertTrue(line.transfer(), "A matching unit enters through the side transport port");
+        line.deposit(owner, ignisSource, IGNIS, 4);
+        line.deposit(owner, perditioSource, PERDITIO, 1);
+        for (int i = 0; i < 4; i++) {
+            test.assertTrue(line.transfer(ignisSource), "A matching Ignis unit enters through the side transport port");
         }
+        test.assertTrue(line.transfer(perditioSource), "Perditio enters through the shared side transport port");
         test.assertFalse(line.transfer(), "Essentia the recipe does not request stays at the source");
         test.assertValueEqual(line.sourceStock(), Map.of(AER, 2), "Wrong-aspect source units are never silently consumed");
         test.runAfterDelay(16, () -> {
@@ -155,8 +159,8 @@ public class AdvancedAlchemyGameTest implements FabricGameTest {
             test.assertTrue(waiting.progress() == 0 && waiting.result().isEmpty() && waiting.catalyst().is(Items.REDSTONE),
                 "Missing one unit preserves both the catalyst and the stored mixture");
             test.assertValueEqual(waiting.essentia(), Map.of(IGNIS, 4, PERDITIO, 1), "Stock remains intact after waiting");
-            line.deposit(owner, PERDITIO, 1);
-            test.assertTrue(line.transfer(), "The last matching unit enters through the tube");
+            line.deposit(owner, perditioSource, PERDITIO, 1);
+            test.assertTrue(line.transfer(perditioSource), "The last matching unit enters through the tube");
         });
         test.startSequence().thenWaitUntil(() -> test.assertTrue(machine.snapshot().result().is(item("ember_salt")),
             "All JSON inputs permit the selected transaction")).thenExecute(() -> {
@@ -209,10 +213,14 @@ public class AdvancedAlchemyGameTest implements FabricGameTest {
         standNear(owner, line.target());
         test.assertTrue(line.thaumatorium().select(owner, ThaumicLegacy.id("ember_salt")), "The owner starts a known recipe");
         use(owner, line.target(), new ItemStack(Items.REDSTONE), false);
+        var perditioSource = line.addSource(Direction.NORTH);
         line.deposit(owner, IGNIS, 4);
-        line.deposit(owner, PERDITIO, 2);
-        for (int i = 0; i < 6; i++) {
-            test.assertTrue(line.transfer(), "The alembic supplies each required unit");
+        line.deposit(owner, perditioSource, PERDITIO, 2);
+        for (int i = 0; i < 4; i++) {
+            test.assertTrue(line.transfer(), "The first alembic supplies each Ignis unit");
+        }
+        for (int i = 0; i < 2; i++) {
+            test.assertTrue(line.transfer(perditioSource), "The second alembic supplies each Perditio unit");
         }
 
         test.startSequence().thenWaitUntil(() -> test.assertTrue(line.thaumatorium().snapshot().progress() >= 40,
@@ -311,13 +319,27 @@ public class AdvancedAlchemyGameTest implements FabricGameTest {
         }
 
         private void deposit(ServerPlayer player, String aspect, int amount) {
+            deposit(player, source, aspect, amount);
+        }
+
+        private BlockPos addSource(Direction side) {
+            var pos = source.east().relative(side);
+            level.setBlockAndUpdate(pos, EssentiaLogistics.ARCANE_ALEMBIC.defaultBlockState());
+            return pos;
+        }
+
+        private void deposit(ServerPlayer player, BlockPos pos, String aspect, int amount) {
             var phial = new ItemStack(EssentiaLogistics.ESSENTIA_PHIAL);
             phial.set(EssentiaPhial.CONTENTS, new EssentiaPhial.Contents(aspect, amount));
-            use(player, source, phial, false);
+            use(player, pos, phial, false);
         }
 
         private boolean transfer() {
-            return EssentiaTransport.tryTransfer(level, source);
+            return transfer(source);
+        }
+
+        private boolean transfer(BlockPos pos) {
+            return EssentiaTransport.tryTransfer(level, pos);
         }
 
         private Map<String, Integer> sourceStock() {

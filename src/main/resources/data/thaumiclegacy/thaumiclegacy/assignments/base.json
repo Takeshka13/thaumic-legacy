@@ -1,5 +1,7 @@
 {
   "assignments": [
+    {"kind": "fluid", "target": "minecraft:water", "aspects": {"thaumiclegacy:aqua": 4}},
+    {"kind": "fluid", "target": "minecraft:lava", "aspects": {"thaumiclegacy:ignis": 4}},
     {"kind": "block", "target": "minecraft:stone", "aspects": {"thaumiclegacy:terra": 4, "thaumiclegacy:ordo": 1}},
     {"kind": "block", "target": "minecraft:cobblestone", "aspects": {"thaumiclegacy:terra": 3, "thaumiclegacy:perditio": 1}},
     {"kind": "block", "target": "minecraft:deepslate", "aspects": {"thaumiclegacy:terra": 4, "thaumiclegacy:tenebrae": 1}},

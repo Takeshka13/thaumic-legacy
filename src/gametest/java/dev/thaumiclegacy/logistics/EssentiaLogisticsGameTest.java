@@ -70,125 +70,78 @@ public class EssentiaLogisticsGameTest implements FabricGameTest {
             "Equipment recipe yields the registered item: " + resultId);
     }
 
-    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 220)
-    public void distillsIntoAlembicAndMovesExactEssentiaThroughPhials(GameTestHelper test) {
+    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 150)
+    public void distillsThroughMenuAndRoutesEachAspectSeparately(GameTestHelper test) {
         var fixture = new Fixture(test);
         var player = newPlayer(test);
-        var jar = fixture.placeJar(2);
-        var other = fixture.placeJar(3);
-        var unsupported = use(player, fixture.furnacePos(), stack(Items.POISONOUS_POTATO), false);
-        test.assertTrue(unsupported.is(Items.POISONOUS_POTATO), "A source without an aspect profile is refused");
-        test.assertTrue(use(player, fixture.furnacePos(), stack(Items.STONE), false).isEmpty(), "An assigned source is accepted");
-        test.assertTrue(use(player, fixture.furnacePos(), stack(Items.CHARCOAL), true).isEmpty(), "Sneaking queues fuel");
-        test.runAfterDelay(10, () -> {
-            var stalled = fixture.furnace().snapshot();
-            test.assertTrue(stalled.input().is(Items.STONE) && stalled.fuel().is(Items.CHARCOAL),
-                "Without an attached alembic the queued source and fuel are retained");
-            test.assertValueEqual(stalled.progress(), 0, "A furnace cannot distill without an alembic");
-            fixture.placeAlembic();
-        });
-        test.startSequence().thenWaitUntil(() -> {
-            var alembic = fixture.alembic();
-            test.assertTrue(alembic != null, "The delayed alembic has been installed");
-            test.assertValueEqual(alembic.snapshot().amount(), 5, "One stone has completed distillation");
-        }).thenExecute(() -> {
-                test.assertValueEqual(fixture.alembic().snapshot().aspects(), Map.of(ORDO, 1, TERRA, 4),
-                    "The alembic receives the entire stone profile");
-                test.assertTrue(fixture.furnace().snapshot().input().isEmpty(), "One completed run spends one source");
+        var menu = new EssentiaFurnaceMenu(1, player.getInventory(), fixture.furnace());
+        test.assertFalse(menu.getSlot(0).mayPlace(stack(Items.POISONOUS_POTATO)), "Feed slot refuses unassigned items");
+        menu.getSlot(0).set(stack(Items.STONE));
+        player.getInventory().setItem(9, stack(Items.CHARCOAL));
+        test.assertTrue(menu.quickMoveStack(player, 4).is(Items.CHARCOAL), "Shift-click loads fuel");
+        fixture.placeAlembic();
 
+        test.runAfterDelay(10, () -> {
+            menu.broadcastChanges();
+            test.assertTrue(menu.progress() > 0 && menu.burnTicks() > 0 && menu.burnTicks() < menu.burnCapacity(),
+                "Menu properties reflect progress and remaining fuel");
+        });
+        test.startSequence().thenWaitUntil(() -> test.assertValueEqual(fixture.alembic().snapshot().aspects(),
+            Map.of(ORDO, 1), "Lower alembic receives only the first aspect")).thenExecute(() -> {
+                var furnace = fixture.furnace();
+                var registries = fixture.level().registryAccess();
+                var decoded = (EssentiaFurnaceBlockEntity) BlockEntity.loadStatic(fixture.furnacePos(), furnace.getBlockState(),
+                    furnace.saveWithFullMetadata(registries), registries);
+                test.assertValueEqual(decoded.snapshot().buffer(), Map.of(TERRA, 4), "Blocked stock survives NBT reload");
+                test.assertValueEqual(furnace.snapshot().buffer(), Map.of(TERRA, 4), "Incompatible stock stays in the buffer");
+                var rejected = use(player, fixture.alembicPos(), filledPhial(AER, 8), false);
+                assertContents(test, rejected, AER, 8);
+                var upper = fixture.alembicPos().above();
+                placeWithItem(player, upper, stack(EssentiaLogistics.ARCANE_ALEMBIC.asItem()));
+            }).thenWaitUntil(() -> test.assertValueEqual(fixture.storage(fixture.alembicPos().above()).snapshot().aspects(),
+                Map.of(TERRA, 4), "Upper alembic receives the second aspect")).thenExecute(() -> {
+                test.assertValueEqual(fixture.furnace().snapshot().buffered(), 0, "Both draws leave the buffer empty");
+                test.assertTrue(fixture.furnace().snapshot().input().isEmpty(), "The batch consumes one feed");
                 var ordo = use(player, fixture.alembicPos(), phial(), false);
                 assertContents(test, ordo, ORDO, 1);
-                var empty = use(player, jar, ordo, false);
-                test.assertValueEqual(EssentiaPhial.contents(empty), EssentiaPhial.contents(phial()), "An accepted phial is emptied");
-                test.assertValueEqual(fixture.storage(jar).snapshot().aspects(), Map.of(ORDO, 1), "Jar stores the extracted aspect");
-
-                var terra = use(player, fixture.alembicPos(), phial(), false);
-                assertContents(test, terra, TERRA, 4);
-                var rejected = use(player, jar, terra, false);
-                assertContents(test, rejected, TERRA, 4);
-                test.assertValueEqual(fixture.storage(jar).snapshot().aspects(), Map.of(ORDO, 1),
-                    "An incompatible phial does not alter a single-aspect jar");
-                use(player, other, rejected, false);
-                test.assertValueEqual(fixture.storage(other).snapshot().aspects(), Map.of(TERRA, 4),
-                    "The second jar stores exactly the second aspect");
-                test.assertValueEqual(fixture.alembic().snapshot().amount(), 0, "No Essentia is duplicated by transfer");
+                var jar = fixture.placeJar(2);
+                use(player, jar, ordo, false);
+                test.assertValueEqual(fixture.storage(jar).snapshot().aspects(), Map.of(ORDO, 1), "Phials retain their transfer behavior");
             }).thenSucceed();
     }
 
-    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 225)
-    public void preservesQueuedInputAndFuelUntilTheEntireProfileFits(GameTestHelper test) {
+    @GameTest(template = EMPTY_STRUCTURE)
+    public void preservesMixedLegacyAlembicAsAQueue(GameTestHelper test) {
         var fixture = new Fixture(test);
-        var player = newPlayer(test);
         fixture.placeAlembic();
-        for (int i = 0; i < 8; i++) {
-            use(player, fixture.alembicPos(), filledPhial(ORDO, 8), false);
+        var existing = fixture.alembic();
+        var pos = fixture.alembicPos();
+        var registries = fixture.level().registryAccess();
+        var tag = existing.saveWithFullMetadata(registries);
+        var mixed = new CompoundTag();
+        mixed.putInt(ORDO, 2);
+        mixed.putInt(TERRA, 5);
+        tag.putInt("version", 1);
+        tag.put("aspects", mixed);
+        var loaded = (EssentiaStorageBlockEntity) BlockEntity.loadStatic(pos, existing.getBlockState(), tag, registries);
+        var reloaded = (EssentiaStorageBlockEntity) BlockEntity.loadStatic(pos, existing.getBlockState(),
+            loaded.saveWithFullMetadata(registries), registries);
+        test.assertValueEqual(reloaded.snapshot().aspects(), Map.of(ORDO, 2), "Only one legacy aspect is active");
+        test.assertValueEqual(reloaded.freeCapacity(), 57, "Both legacy aspects occupy capacity");
+        test.assertFalse(reloaded.canAccept(Map.of(TERRA, 1)), "Reserved aspect cannot mix into the active stock");
+        test.assertFalse(reloaded.canAccept(Map.of(ORDO, 58)), "The reserve reduces free capacity");
+        fixture.level().setBlockEntity(reloaded);
+        test.assertTrue(reloaded.extractOne(Direction.EAST, ORDO), "The first active unit is extracted");
+        test.assertTrue(reloaded.extractOne(Direction.EAST, ORDO), "The second active unit is extracted");
+        test.assertValueEqual(reloaded.snapshot().aspects(), Map.of(TERRA, 5), "The second aspect becomes available in full");
+        test.assertFalse(reloaded.extractOne(Direction.EAST, ORDO), "The first aspect cannot be withdrawn twice");
+        for (int i = 0; i < 5; i++) {
+            test.assertTrue(reloaded.extractOne(Direction.EAST, TERRA), "Each reserved unit is recovered");
         }
-        test.assertValueEqual(fixture.alembic().snapshot().amount(), 64, "Alembic capacity is 64 Essentia units");
-        var rejected = use(player, fixture.alembicPos(), filledPhial(AER, 8), false);
-        assertContents(test, rejected, AER, 8);
-        test.assertValueEqual(fixture.alembic().snapshot().aspects(), Map.of(ORDO, 64), "Full storage refuses the entire transfer");
-        use(player, fixture.furnacePos(), stack(Items.STONE), false);
-        use(player, fixture.furnacePos(), stack(Items.CHARCOAL), true);
-        test.runAfterDelay(15, () -> {
-            var waiting = fixture.furnace().snapshot();
-            test.assertValueEqual(waiting.progress(), 0, "Full output blocks distillation");
-            test.assertTrue(waiting.input().is(Items.STONE) && waiting.fuel().is(Items.CHARCOAL),
-                "A blocked cycle does not consume queued input or fuel");
-            assertContents(test, use(player, fixture.alembicPos(), phial(), false), ORDO, 8);
-        });
-        test.startSequence().thenWaitUntil(() -> test.assertValueEqual(fixture.alembic().snapshot().amount(), 61,
-            "Removing eight units lets the complete five-unit batch finish")).thenExecute(() -> {
-                test.assertValueEqual(fixture.alembic().snapshot().aspects(), Map.of(ORDO, 57, TERRA, 4),
-                    "Resuming a blocked cycle transfers one complete stone profile");
-                test.assertTrue(fixture.furnace().snapshot().input().isEmpty(), "Resumed work consumes its source once");
-                var overflow = use(player, fixture.alembicPos(), filledPhial(AER, 8), false);
-                assertContents(test, overflow, AER, 5);
-                test.assertValueEqual(fixture.alembic().snapshot().aspects(), Map.of(ORDO, 57, TERRA, 4, AER, 3),
-                    "A precise partial deposit fills the remaining space and preserves the phial remainder");
-            }).thenSucceed();
+        test.assertFalse(reloaded.extractOne(Direction.EAST, TERRA), "The reserve cannot be drawn twice");
+        test.assertTrue(reloaded.canAccept(Map.of(AER, 8)), "A drained alembic can change aspects");
+        test.succeed();
     }
-
-    @GameTest(template = EMPTY_STRUCTURE, timeoutTicks = 170)
-    public void spillsNoStockWhenMultipleAlembicsCannotAcceptTheFullBatch(GameTestHelper test) {
-        var fixture = new Fixture(test);
-        var player = newPlayer(test);
-        var bottom = fixture.alembicPos();
-        var upper = bottom.above();
-        placeWithItem(player, bottom, stack(EssentiaLogistics.ARCANE_ALEMBIC.asItem()));
-        placeWithItem(player, upper, stack(EssentiaLogistics.ARCANE_ALEMBIC.asItem()));
-        test.assertTrue(fixture.storage(bottom) != null && fixture.storage(upper) != null,
-            "The furnace and lower alembic accept ordinary placement from above");
-        for (int i = 0; i < 7; i++) {
-            use(player, bottom, filledPhial(ORDO, 8), false);
-        }
-        use(player, bottom, filledPhial(ORDO, 6), false);
-        for (int i = 0; i < 8; i++) {
-            use(player, upper, filledPhial(ORDO, 8), false);
-        }
-        use(player, fixture.furnacePos(), stack(Items.STONE), false);
-        use(player, fixture.furnacePos(), stack(Items.CHARCOAL), true);
-        test.runAfterDelay(12, () -> {
-            test.assertValueEqual(fixture.storage(bottom).snapshot().amount(), 62, "No partial output is committed on a full stack");
-            test.assertValueEqual(fixture.storage(upper).snapshot().amount(), 64, "A full upper alembic remains unchanged");
-            var waiting = fixture.furnace().snapshot();
-            test.assertTrue(waiting.input().is(Items.STONE) && waiting.fuel().is(Items.CHARCOAL) && waiting.progress() == 0,
-                "There is no source, fuel, or timing loss while the complete batch will not fit");
-            assertContents(test, use(player, upper, phial(), false), ORDO, 8);
-        });
-        test.startSequence().thenWaitUntil(() -> {
-            test.assertValueEqual(fixture.storage(bottom).snapshot().amount(), 64, "Lower alembic fills first");
-            test.assertValueEqual(fixture.storage(upper).snapshot().amount(), 59, "Upper alembic receives the remaining units");
-        }).thenExecute(() -> {
-            var lowerStock = fixture.storage(bottom).snapshot().aspects();
-            var upperStock = fixture.storage(upper).snapshot().aspects();
-            test.assertValueEqual(lowerStock.getOrDefault(TERRA, 0) + upperStock.getOrDefault(TERRA, 0), 4,
-                "Exactly the four stone Terra units are distributed");
-            test.assertValueEqual(lowerStock.getOrDefault(ORDO, 0) + upperStock.getOrDefault(ORDO, 0), 119,
-                "Existing Ordo and the single new unit are conserved");
-            test.assertTrue(fixture.furnace().snapshot().input().isEmpty(), "Only the completed batch consumes the input");
-        }).thenSucceed();
-    }
-
     @GameTest(template = EMPTY_STRUCTURE)
     public void retainsJarContentsWhenSavedBrokenAndPlacedAgain(GameTestHelper test) {
         var fixture = new Fixture(test);
@@ -219,13 +172,11 @@ public class EssentiaLogisticsGameTest implements FabricGameTest {
         var fixture = new Fixture(test);
         var player = newPlayer(test);
         fixture.placeAlembic();
-        use(player, fixture.furnacePos(), stack(Items.STONE), false);
-        use(player, fixture.furnacePos(), stack(Items.LAVA_BUCKET), true);
-        test.assertTrue(use(player, fixture.furnacePos(), stack(Items.STONE), false).is(Items.STONE),
-            "A second feed item cannot replace the queued source");
+        fixture.furnace().inventory().setItem(EssentiaFurnaceBlockEntity.INPUT, stack(Items.STONE));
+        fixture.furnace().inventory().setItem(EssentiaFurnaceBlockEntity.FUEL, stack(Items.LAVA_BUCKET));
 
         test.runAfterDelay(25, () -> {
-            use(player, fixture.furnacePos(), stack(Items.CHARCOAL), true);
+            fixture.furnace().inventory().setItem(EssentiaFurnaceBlockEntity.FUEL, stack(Items.CHARCOAL));
             var running = fixture.furnace().snapshot();
             test.assertTrue(running.progress() > 0 && running.progress() < running.duration(),
                 "A distillation in progress can be interrupted before its output commits");
@@ -244,16 +195,19 @@ public class EssentiaLogisticsGameTest implements FabricGameTest {
             assertFurnaceRun(test, fixture.furnace().snapshot(), running);
             test.assertValueEqual(fixture.alembic().snapshot().amount(), 0, "Reinstallation does not prematurely produce Essentia");
         });
-        test.startSequence().thenWaitUntil(() -> test.assertValueEqual(fixture.alembic().snapshot().amount(), 5,
+        test.startSequence().thenWaitUntil(() -> test.assertValueEqual(fixture.alembic().snapshot().amount(), 1,
             "The originally queued input completes after resuming")).thenExecute(() -> {
-                test.assertValueEqual(fixture.alembic().snapshot().aspects(), Map.of(ORDO, 1, TERRA, 4),
+                test.assertValueEqual(fixture.alembic().snapshot().aspects(), Map.of(ORDO, 1),
                     "Break and reload preserve exactly the expected Essentia");
                 test.assertTrue(fixture.furnace().snapshot().input().isEmpty(), "Original queued inputs are consumed exactly once");
-                test.assertTrue(use(player, fixture.furnacePos(), ItemStack.EMPTY, true).is(Items.BUCKET),
-                    "The spent fuel container can be recovered");
-                test.assertTrue(use(player, fixture.furnacePos(), ItemStack.EMPTY, true).is(Items.CHARCOAL),
-                    "The unused queued fuel can be recovered");
-                test.assertTrue(use(player, fixture.furnacePos(), ItemStack.EMPTY, true).isEmpty(),
+                test.assertValueEqual(fixture.furnace().snapshot().buffer(), Map.of(TERRA, 4),
+                    "Remaining stock stays in the reinstalled furnace");
+                var menu = new EssentiaFurnaceMenu(1, player.getInventory(), fixture.furnace());
+                test.assertTrue(menu.quickMoveStack(player, EssentiaFurnaceBlockEntity.FUEL_REMAINDER).is(Items.BUCKET),
+                    "The spent container can be recovered through the menu");
+                test.assertTrue(menu.quickMoveStack(player, EssentiaFurnaceBlockEntity.FUEL).is(Items.CHARCOAL),
+                    "The queued fuel can be recovered through the menu");
+                test.assertTrue(menu.quickMoveStack(player, EssentiaFurnaceBlockEntity.FUEL_REMAINDER).isEmpty(),
                     "Repeated recovery creates no extra items");
             }).thenSucceed();
     }

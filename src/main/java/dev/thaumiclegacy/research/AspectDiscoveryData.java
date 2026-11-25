@@ -168,6 +168,19 @@ final class AspectDiscoveryData extends SavedData {
 		return progress != null && progress.known.contains(AQUA) && arcaneFoundationsUnlocked(player, legacy);
 	}
 
+	List<AspectView> observedAspects(UUID player, Specimen specimen, AspectCatalog catalog) {
+		Progress progress = players.get(player);
+		if (progress == null || !progress.specimens.contains(specimen)) {
+			return List.of();
+		}
+		return catalog.aspects(specimen.kind(), specimen.id()).entrySet().stream()
+				.sorted(Map.Entry.comparingByKey())
+				.map(entry -> progress.known.contains(entry.getKey())
+						? view(catalog, entry.getKey(), entry.getValue(), Set.of())
+						: new AspectView("", entry.getValue(), 0xA29179, -1, List.of()))
+				.toList();
+	}
+
 	JournalSnapshotPayload snapshot(UUID player, List<ResourceLocation> legacy, AspectCatalog catalog) {
 		return snapshot(player, legacy, catalog, new JournalSnapshotPayload.NodeProgress(firstResearchUnlocked(player, legacy), 0, false));
 	}
@@ -181,13 +194,7 @@ final class AspectDiscoveryData extends SavedData {
 		if (progress != null) {
 			var recent = List.copyOf(progress.specimens);
 			for (Specimen specimen : recent.subList(Math.max(0, recent.size() - JournalSnapshotPayload.MAX_SPECIMENS), recent.size())) {
-				var aspects = catalog.aspects(specimen.kind(), specimen.id()).entrySet().stream()
-						.sorted(Map.Entry.comparingByKey())
-						.map(entry -> progress.known.contains(entry.getKey())
-								? view(catalog, entry.getKey(), entry.getValue(), Set.of())
-								: new AspectView("", entry.getValue(), 0xA29179, -1, List.of()))
-						.toList();
-				specimens.add(new SpecimenView(specimen.id(), specimen.kind(), aspects));
+				specimens.add(new SpecimenView(specimen.id(), specimen.kind(), observedAspects(player, specimen, catalog)));
 			}
 			progress.known.stream().filter(catalog.definitions()::containsKey)
 					.limit(JournalSnapshotPayload.MAX_DISCOVERED)
@@ -266,7 +273,7 @@ final class AspectDiscoveryData extends SavedData {
 				CompoundTag specimen = specimens.getCompound(j);
 				String kind = specimen.getString("kind");
 				ResourceLocation id = ResourceLocation.tryParse(specimen.getString("id"));
-				if (id != null && Set.of("block", "item", "entity").contains(kind)) {
+				if (id != null && Set.of("block", "item", "entity", "fluid").contains(kind)) {
 					progress.specimens.add(new Specimen(kind, id));
 				}
 			}

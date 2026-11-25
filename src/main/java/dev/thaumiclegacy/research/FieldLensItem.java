@@ -22,7 +22,12 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -69,15 +74,16 @@ public class FieldLensItem extends Item {
 				noTarget(player);
 			} else {
 				Entity entity = findEntity(player);
-				if (entity == null) {
-					observeBlock(player, hit.getBlockPos());
-				} else {
+				if (entity != null) {
 					observe(player, specimen(entity), null);
+				} else {
+					scanBlockOrFluid(player, hit);
 				}
 			}
 		}
 		return InteractionResult.sidedSuccess(context.getLevel().isClientSide());
 	}
+
 
 	@Override
 	public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
@@ -92,12 +98,7 @@ public class FieldLensItem extends Item {
 				if (target != null) {
 					observe(serverPlayer, specimen(target), null);
 				} else {
-					BlockHitResult hit = getPlayerPOVHitResult(level, player, ClipContext.Fluid.NONE);
-					if (hit.getType() == HitResult.Type.BLOCK) {
-						observeBlock(serverPlayer, hit.getBlockPos());
-					} else {
-						onAirScan(serverPlayer);
-					}
+					scanBlockOrFluid(serverPlayer, viewBlock(serverPlayer));
 				}
 			}
 		}
@@ -119,11 +120,85 @@ public class FieldLensItem extends Item {
 		noTarget(player);
 	}
 
+	private static BlockHitResult viewBlock(ServerPlayer player) {
+		Vec3 eye = player.getEyePosition();
+		return player.serverLevel().clip(new ClipContext(eye,
+			eye.add(player.getViewVector(1.0F).scale(player.blockInteractionRange())),
+			ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+	}
+
+	private static Specimen findFluid(ServerPlayer player, BlockHitResult solid) {
+		var level = player.serverLevel();
+		Vec3 end = solid.getLocation();
+		var hit = level.clip(new ClipContext(player.getEyePosition(), end, ClipContext.Block.OUTLINE,
+			ClipContext.Fluid.ANY, player) {
+			@Override
+			public VoxelShape getBlockShape(BlockState state, BlockGetter world, BlockPos pos) {
+				return Shapes.empty();
+			}
+		});
+		if (hit.getType() != HitResult.Type.BLOCK) {
+			return null;
+		}
+		var fluid = level.getFluidState(hit.getBlockPos());
+		if (fluid.is(FluidTags.WATER)) {
+			return new Specimen("fluid", ResourceLocation.withDefaultNamespace("water"));
+		}
+		if (fluid.is(FluidTags.LAVA)) {
+			return new Specimen("fluid", ResourceLocation.withDefaultNamespace("lava"));
+		}
+		return null;
+	}
+
+	private void scanBlockOrFluid(ServerPlayer player, BlockHitResult solid) {
+		Specimen fluid = findFluid(player, solid);
+		if (fluid != null) {
+			observe(player, fluid, null);
+		} else if (solid.getType() == HitResult.Type.BLOCK) {
+			observeBlock(player, solid.getBlockPos());
+		} else {
+			onAirScan(player);
+		}
+	}
+
+	public void preview(ServerPlayer player, InteractionHand hand) {
+		if (!canScan(player) || !ServerPlayNetworking.canSend(player, LensFocusPayload.TYPE)) {
+			return;
+		}
+		Specimen target = heldSpecimen(player, hand);
+		if (target == null) {
+			Entity entity = findEntity(player);
+			if (entity != null) {
+				target = specimen(entity);
+			} else {
+				var solid = viewBlock(player);
+				target = findFluid(player, solid);
+				if (target == null && solid.getType() == HitResult.Type.BLOCK) {
+					var block = player.serverLevel().getBlockState(solid.getBlockPos()).getBlock();
+					target = new Specimen("block", BuiltInRegistries.BLOCK.getKey(block));
+				}
+			}
+		}
+		if (target == null) {
+			ServerPlayNetworking.send(player, new LensFocusPayload(Component.empty(), java.util.List.of()));
+		} else {
+			var aspects = AspectDiscoveryData.get(player).observedAspects(player.getUUID(), target, AspectCatalog.current());
+			ServerPlayNetworking.send(player, new LensFocusPayload(specimenName(target.kind(), target.id()),
+				aspects.stream().limit(LensFocusPayload.MAX_ASPECTS).toList()));
+		}
+	}
+
+	private static Specimen heldSpecimen(ServerPlayer player, InteractionHand hand) {
+		return hand == InteractionHand.MAIN_HAND && player.isShiftKeyDown() && !player.getOffhandItem().isEmpty()
+			? new Specimen("item", BuiltInRegistries.ITEM.getKey(player.getOffhandItem().getItem())) : null;
+	}
+
 	private static boolean observeHeldItem(ServerPlayer player, InteractionHand hand) {
-		if (hand != InteractionHand.MAIN_HAND || !player.isShiftKeyDown() || player.getOffhandItem().isEmpty()) {
+		Specimen target = heldSpecimen(player, hand);
+		if (target == null) {
 			return false;
 		}
-		observe(player, new Specimen("item", BuiltInRegistries.ITEM.getKey(player.getOffhandItem().getItem())), null);
+		observe(player, target, null);
 		return true;
 	}
 
@@ -199,10 +274,8 @@ public class FieldLensItem extends Item {
 			return;
 		}
 
-		String name = specimen.kind().equals("item") ? BuiltInRegistries.ITEM.get(specimen.id()).getDescriptionId()
-				: specimen.id().toLanguageKey(specimen.kind());
 		player.displayClientMessage(Component.translatable("message.thaumiclegacy.observed",
-				Component.translatableWithFallback(name, specimen.id().toString())), true);
+				specimenName(specimen.kind(), specimen.id())), true);
 		if (!wasUnlocked && data.firstResearchUnlocked(uuid, oldData.getObservations(uuid))) {
 			player.displayClientMessage(Component.translatable("message.thaumiclegacy.research_unlocked"), false);
 		}
@@ -212,6 +285,13 @@ public class FieldLensItem extends Item {
 			ServerPlayNetworking.send(player, new ScanFeedbackPayload(discovery == null ? 0xD2B277 : discovery.color(),
 					discovery != null));
 		}
+	}
+
+	public static Component specimenName(String kind, ResourceLocation id) {
+		String key = kind.equals("item")
+			? BuiltInRegistries.ITEM.getOptional(id).map(Item::getDescriptionId).orElse(id.toLanguageKey(kind))
+			: id.toLanguageKey(kind);
+		return Component.translatableWithFallback(key, id.toString());
 	}
 
 	private static void noTarget(ServerPlayer player) {

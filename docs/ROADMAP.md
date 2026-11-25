@@ -56,7 +56,7 @@ The GitHub Actions workflow selects JDK 21. Verification on a hosted GitHub runn
 
 ### Aspect Discovery extension
 
-The Thaumometer and Research Journal use 52 classic aspects across 98 bundled specimen profiles. The Thaumcraft 6 API supplies the baseline, with compatible historical extensions from Thaumcraft 4. Discovery uses evidence and compound prerequisites. Versioned per-player storage preserves earlier discoveries and observations. See [Aspect Discovery](ASPECTS.md) and [Classic Magical Tools](CLASSIC_TOOLS.md).
+The Thaumometer and Research Journal use 52 classic aspects across 100 bundled specimen profiles. The Thaumcraft 6 API supplies the baseline, with compatible historical extensions from Thaumcraft 4. Discovery uses evidence and compound prerequisites. Versioned per-player storage preserves earlier discoveries and observations. See [Aspect Discovery](ASPECTS.md) and [Classic Magical Tools](CLASSIC_TOOLS.md).
 
 ### Aura and Flux foundation
 
@@ -80,7 +80,7 @@ Normal, Bright, and Unstable nodes appear in fresh Overworld chunks. The Thaumom
 
 ### Essentia Logistics and Thaumonomicon
 
-The Alchemical Furnace processes a profiled input into an Arcane Alembic. Reusable phials transfer individual aspects into Warded Jars. The Thaumonomicon keeps existing observations and the aspect index and adds eight data-driven research categories. [Progression, recipes, and transport design](ESSENTIA_LOGISTICS.md)
+The Alchemical Furnace has a synchronized two-input menu and a multi-aspect buffer, which feeds stacked single-aspect alembics. Reusable phials transfer individual aspects into Warded Jars. The Thaumonomicon retains observation data and lists personal sources in the aspect index across eight research categories. [Progression, recipes, and transport design](ESSENTIA_LOGISTICS.md)
 
 ### Essentia Transport Foundation
 

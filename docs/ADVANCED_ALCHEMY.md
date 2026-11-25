@@ -27,7 +27,7 @@ The device reads the existing `thaumiclegacy:alchemy` recipe type. A selected re
 
 Use a blank label on a jar containing an aspect you know. To label an empty jar, hold a filled phial of that aspect in the other hand. The sample is preserved. The jar accepts only the chosen aspect from phials and tubes, even when empty. Sneak and use an empty hand to remove the label and get a blank label back. Thaumometer and Goggles of Revealing show the designation. A legacy jar with no recorded label behaves as it did before.
 
-Up to four consecutive alembics directly above the furnace share each completed distillation. The server allocates the whole profile in stable aspect order, bottom alembic first, before spending the input. If the combined free space is insufficient, the furnace pauses with the input, fuel and progress preserved. Gaps end the column. Each alembic independently exposes its contents to existing tubes and phials. [Azanor's TC6 labels and stacked alembics](https://raw.githubusercontent.com/Azanor/thaumcraft-beta/master/en_us.lang#L1395-L1409)
+The furnace stores a completed profile in its internal buffer before distributing it to up to four consecutive alembics directly above it. Each alembic holds one aspect at a time. Gaps end the column, and stock with no compatible destination stays in the buffer. The furnace pauses before consuming input if the whole batch cannot fit in the buffer. Each alembic exposes its active stock to existing tubes and phials. [Azanor's TC6 labels and stacked alembics](https://raw.githubusercontent.com/Azanor/thaumcraft-beta/master/en_us.lang#L1395-L1409)
 
 ## Essentia suction design
 
@@ -37,7 +37,7 @@ The current server uses typed, directional ports with separate availability chec
 
 ## Verification scenario
 
-1. Stack at least two alembics on the Alchemical Furnace. Fill the first nearly to capacity, distill stone, and compare the totals across both alembics. Repeat with insufficient combined capacity and confirm the queued fuel and stone remain.
+1. Stack at least two alembics on the Alchemical Furnace. Distill a torch and confirm that Ignis and Lux go into separate alembics. Block the outputs and confirm that new stock accumulates in the furnace buffer. When it can no longer hold an entire batch, confirm that the next input stays in the slot.
 2. Distill bone to obtain Mortuus. Put it in the centrifuge with a phial and confirm that Aqua and Perditio are produced together. A phial of either primary is rejected as input. Connect the top output to a suitable jar or extract it with an empty phial.
 3. Label an empty jar using a filled matching phial in the other hand. Verify rejection of a different aspect. Break and place the jar, inspect it, then remove the label with sneaking empty-hand use.
 4. Select Lumen Glass on the Thaumatorium, insert plain glass, and supply Lux 2 and Vitreus 2 through tubes. After six seconds of eligible work at 20 TPS, collect two Lumen Glass with an empty hand. Check again without adding resources. No second batch is produced.

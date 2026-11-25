@@ -5,6 +5,7 @@ import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.transport.EssentiaTransport;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
@@ -13,6 +14,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -23,6 +26,8 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.PushReaction;
 
 public final class EssentiaLogistics {
+	public static final MenuType<EssentiaFurnaceMenu> FURNACE_MENU = Registry.register(BuiltInRegistries.MENU,
+			ThaumicLegacy.id("alchemical_furnace"), new MenuType<>(EssentiaFurnaceMenu::new, FeatureFlags.VANILLA_SET));
 	private static final String MESSAGE = "message.thaumiclegacy.logistics.";
 	public static final Block ALCHEMICAL_FURNACE = block("alchemical_furnace", new EssentiaFurnaceBlock(
 			machineProperties(SoundType.STONE).lightLevel(state -> state.getValue(EssentiaFurnaceBlock.LIT) ? 13 : 0)));
@@ -45,6 +50,7 @@ public final class EssentiaLogistics {
 	}
 
 	public static void register() {
+		PayloadTypeRegistry.playS2C().register(FurnaceBufferPayload.TYPE, FurnaceBufferPayload.CODEC);
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			BlockPos pos = hit.getBlockPos();
 			var held = player.getItemInHand(hand);
@@ -60,7 +66,9 @@ public final class EssentiaLogistics {
 			if (player instanceof ServerPlayer serverPlayer) {
 				BlockEntity target = level.getBlockEntity(pos);
 				if (target instanceof EssentiaFurnaceBlockEntity furnace) {
-					furnace.interact(serverPlayer, hand);
+					if (canInteract(furnace, serverPlayer)) {
+						serverPlayer.openMenu(furnace.menuProvider());
+					}
 				} else if (target instanceof EssentiaStorageBlockEntity storage) {
 					storage.interact(serverPlayer, hand);
 				}

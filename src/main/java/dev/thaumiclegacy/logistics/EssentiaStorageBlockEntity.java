@@ -26,6 +26,7 @@ import java.util.TreeMap;
 public final class EssentiaStorageBlockEntity extends BlockEntity implements AdvancedEssentiaPort {
 	public static final int CAPACITY = 64;
 	private final TreeMap<String, Integer> aspects = new TreeMap<>();
+	private final TreeMap<String, Integer> legacyReserve = new TreeMap<>();
 	private int transportOrder;
 	private EssentiaTransport.Activity transportActivity;
 	private String label = "";
@@ -39,7 +40,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 	}
 
 	public boolean hasEssentia() {
-		return !aspects.isEmpty();
+		return !aspects.isEmpty() || !legacyReserve.isEmpty();
 	}
 
 	public int nextTransportOrder() {
@@ -99,6 +100,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 		}
 		if (source == 1) {
 			aspects.remove(aspect);
+			promoteReserve();
 		} else {
 			aspects.put(aspect, source - 1);
 		}
@@ -120,7 +122,7 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 			return false;
 		}
 		int room = CAPACITY - total();
-		if (singleAspect() && (batch.size() != 1 || !matchesContents(batch.keySet().iterator().next()))) {
+		if (!legacyReserve.isEmpty() || batch.size() != 1 || !matchesContents(batch.keySet().iterator().next())) {
 			return false;
 		}
 		for (var entry : batch.entrySet()) {
@@ -176,12 +178,13 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 			String id = first.getKey();
 			int moved = Math.min(EssentiaPhial.CAPACITY, first.getValue());
 			aspects.compute(id, (key, value) -> value == moved ? null : value - moved);
+			promoteReserve();
 			EssentiaPhial.writeContents(held, id, moved);
 			changed(player);
 			return EssentiaLogistics.feedback(player, true, "transferred_out", RevealingPayload.AspectAmount.nameFor(player, id), moved);
 		}
 		String id = contents.aspect();
-		if (singleAspect() && !matchesContents(id)) {
+		if (!legacyReserve.isEmpty() || !matchesContents(id)) {
 			return EssentiaLogistics.feedback(player, false, "incompatible");
 		}
 		int moved = Math.min(contents.amount(), CAPACITY - total());
@@ -236,7 +239,15 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 	}
 
 	private int total() {
-		return aspects.values().stream().mapToInt(Integer::intValue).sum();
+		return aspects.values().stream().mapToInt(Integer::intValue).sum()
+				+ legacyReserve.values().stream().mapToInt(Integer::intValue).sum();
+	}
+
+	private void promoteReserve() {
+		if (aspects.isEmpty() && !legacyReserve.isEmpty()) {
+			var next = legacyReserve.pollFirstEntry();
+			aspects.put(next.getKey(), next.getValue());
+		}
 	}
 
 	private void describe(ServerPlayer player) {
@@ -251,8 +262,19 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 	protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 		super.loadAdditional(tag, registries);
 		aspects.clear();
-		CompoundTag stored = tag.getCompound("aspects");
-		int room = CAPACITY;
+		legacyReserve.clear();
+		readContents(tag.getCompound("aspects"), true);
+		if (!singleAspect()) {
+			readContents(tag.getCompound("legacy_reserve"), false);
+		}
+		promoteReserve();
+		String savedLabel = tag.getString("label");
+		label = singleAspect() && savedLabel.equals(AspectCatalog.normalizeId(savedLabel))
+				&& (aspects.isEmpty() || aspects.containsKey(savedLabel)) ? savedLabel : "";
+	}
+
+	private void readContents(CompoundTag stored, boolean active) {
+		int room = freeCapacity();
 		for (String id : stored.getAllKeys().stream().sorted().toList()) {
 			if (room == 0 || singleAspect() && !aspects.isEmpty()) {
 				break;
@@ -260,23 +282,26 @@ public final class EssentiaStorageBlockEntity extends BlockEntity implements Adv
 			if (id.equals(AspectCatalog.normalizeId(id)) && stored.contains(id, Tag.TAG_INT)) {
 				int amount = Mth.clamp(stored.getInt(id), 0, room);
 				if (amount > 0) {
-					aspects.put(id, amount);
+					var target = ((active && aspects.isEmpty()) || aspects.containsKey(id)) ? aspects : legacyReserve;
+					target.merge(id, amount, Integer::sum);
 					room -= amount;
 				}
 			}
 		}
-		String savedLabel = tag.getString("label");
-		label = singleAspect() && savedLabel.equals(AspectCatalog.normalizeId(savedLabel))
-				&& (aspects.isEmpty() || aspects.containsKey(savedLabel)) ? savedLabel : "";
 	}
 
 	@Override
 	protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 		super.saveAdditional(tag, registries);
-		tag.putInt("version", 1);
+		tag.putInt("version", 2);
 		CompoundTag stored = new CompoundTag();
 		aspects.forEach(stored::putInt);
 		tag.put("aspects", stored);
+		if (!legacyReserve.isEmpty()) {
+			CompoundTag reserve = new CompoundTag();
+			legacyReserve.forEach(reserve::putInt);
+			tag.put("legacy_reserve", reserve);
+		}
 		if (!label.isEmpty()) {
 			tag.putString("label", label);
 		}

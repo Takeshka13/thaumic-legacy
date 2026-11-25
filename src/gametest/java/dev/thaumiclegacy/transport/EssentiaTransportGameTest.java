@@ -63,21 +63,27 @@ public class EssentiaTransportGameTest implements FabricGameTest {
         line.place(valvePos, valve.setValue(TransportBlock.OPEN, false));
         line.place(filterPos, EssentiaTransport.FILTER.defaultBlockState().setValue(TransportBlock.AXIS, Direction.Axis.X));
         var filter = (TransportBlockEntity) line.level().getBlockEntity(filterPos);
+        var terraSource = line.tube(1).north();
+        line.place(terraSource, EssentiaLogistics.ARCANE_ALEMBIC.defaultBlockState());
         deposit(player, line.source(), ORDO, 3);
-        deposit(player, line.source(), TERRA, 4);
+        deposit(player, terraSource, TERRA, 4);
         filter.configure(TERRA);
 
         EssentiaTransport.tryTransfer(line.level(), line.source());
+        EssentiaTransport.tryTransfer(line.level(), terraSource);
         test.assertTrue(line.stock(line.jar()).isEmpty(), "Closed valve blocks all aspects");
-        test.assertValueEqual(line.stock(line.source()), Map.of(ORDO, 3, TERRA, 4), "Closed route cannot debit stock");
+        test.assertValueEqual(line.stock(line.source()), Map.of(ORDO, 3), "Closed route cannot debit Ordo");
+        test.assertValueEqual(line.stock(terraSource), Map.of(TERRA, 4), "Closed route cannot debit Terra");
 
         line.place(valvePos, valve.setValue(TransportBlock.AXIS, Direction.Axis.Z));
-        EssentiaTransport.tryTransfer(line.level(), line.source());
+        EssentiaTransport.tryTransfer(line.level(), terraSource);
         test.assertTrue(line.stock(line.jar()).isEmpty(), "An open valve on the wrong axis cannot fork a route");
         line.place(valvePos, valve.setValue(TransportBlock.OPEN, true));
-        EssentiaTransport.tryTransfer(line.level(), line.source());
+        test.assertFalse(EssentiaTransport.tryTransfer(line.level(), line.source()), "The aligned filter rejects Ordo");
+        EssentiaTransport.tryTransfer(line.level(), terraSource);
         test.assertValueEqual(line.stock(line.jar()), Map.of(TERRA, 1), "Only the allowed aspect traverses the aligned filter");
-        test.assertValueEqual(line.stock(line.source()), Map.of(ORDO, 3, TERRA, 3), "A rejected aspect remains at source");
+        test.assertValueEqual(line.stock(line.source()), Map.of(ORDO, 3), "A rejected aspect remains at source");
+        test.assertValueEqual(line.stock(terraSource), Map.of(TERRA, 3), "Only the delivered unit is debited");
 
         var tag = filter.saveWithFullMetadata(line.level().registryAccess());
         var decoded = (TransportBlockEntity) BlockEntity.loadStatic(filterPos, filter.getBlockState(), tag,

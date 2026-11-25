@@ -5,11 +5,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -18,31 +19,46 @@ import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 	public static final int DURATION = 100;
 	public static final int MAX_ALEMBICS = 4;
-	private ItemStack input = ItemStack.EMPTY;
-	private ItemStack fuel = ItemStack.EMPTY;
-	private ItemStack inputRemainder = ItemStack.EMPTY;
-	private ItemStack fuelRemainder = ItemStack.EMPTY;
-	private int progress;
-	private int burnTicks;
+	public static final int CAPACITY = MAX_ALEMBICS * EssentiaStorageBlockEntity.CAPACITY;
+	static final int INPUT = 0, FUEL = 1, INPUT_REMAINDER = 2, FUEL_REMAINDER = 3;
+	private static final String[] ITEM_KEYS = {"input", "fuel", "input_remainder", "fuel_remainder"};
+	private final SimpleContainer inventory = new SimpleContainer(ITEM_KEYS.length);
+	private final TreeMap<String, Integer> buffer = new TreeMap<>();
+	private ItemStack lastInput = ItemStack.EMPTY;
 	private AspectCatalog cachedCatalog;
 	private Map<String, Integer> cachedProfile = Map.of();
+	private int buffered;
+	private int progress;
+	private int burnTicks;
+	private int burnCapacity;
 
 	EssentiaFurnaceBlockEntity(BlockPos pos, BlockState state) {
 		super(EssentiaLogistics.FURNACE_ENTITY, pos, state);
+		inventory.addListener(container -> {
+			trackInput();
+			setChanged();
+		});
+	}
+
+	SimpleMenuProvider menuProvider() {
+		return new SimpleMenuProvider((id, playerInventory, player) ->
+				new EssentiaFurnaceMenu(id, playerInventory, this), getBlockState().getBlock().getName());
+	}
+
+	SimpleContainer inventory() {
+		return inventory;
 	}
 
 	public FurnaceView snapshot() {
-		FurnaceState state = level instanceof ServerLevel server ? state(output(server)) : FurnaceState.IDLE;
-		return new FurnaceView(input.copy(), fuel.copy(), inputRemainder.copy(), fuelRemainder.copy(),
-				progress, DURATION, burnTicks, state);
+		return new FurnaceView(inventory.getItem(INPUT).copy(), inventory.getItem(FUEL).copy(),
+				inventory.getItem(INPUT_REMAINDER).copy(), inventory.getItem(FUEL_REMAINDER).copy(),
+				progress, DURATION, burnTicks, state(), burnCapacity, Map.copyOf(buffer), buffered);
 	}
 
 	static void tick(Level level, BlockPos pos, BlockState state, EssentiaFurnaceBlockEntity furnace) {
@@ -52,197 +68,127 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 	}
 
 	private void tick(ServerLevel server, BlockState blockState) {
-		var alembic = output(server);
-		boolean running = state(alembic) == FurnaceState.DISTILLING;
+		trackInput();
+		drainIntoAlembics(server);
+		boolean running = state() == FurnaceState.DISTILLING;
 		if (running) {
-			running = distill(alembic);
+			distill();
 		}
 		if (blockState.getValue(EssentiaFurnaceBlock.LIT) != running) {
 			server.setBlock(worldPosition, blockState.setValue(EssentiaFurnaceBlock.LIT, running), Block.UPDATE_CLIENTS);
 		}
 	}
 
-	private boolean distill(List<EssentiaStorageBlockEntity> alembics) {
-		boolean finished = progress + 1 >= DURATION;
-		// The complete batch must fit before anything is spent on the final tick.
-		if (finished && !distribute(alembics, currentProfile())) {
-			return false;
-		}
-		if (burnTicks == 0) {
-			burnTicks = burnDuration(fuel);
-			fuelRemainder = combine(fuelRemainder, remainder(fuel));
-			fuel = ItemStack.EMPTY;
-		}
-		burnTicks--;
-		if (finished) {
-			inputRemainder = combine(inputRemainder, remainder(input));
-			input = ItemStack.EMPTY;
-			cachedCatalog = null;
+	private void trackInput() {
+		ItemStack current = inventory.getItem(INPUT);
+		if (!ItemStack.isSameItemSameComponents(lastInput, current)) {
+			lastInput = current.copyWithCount(1);
 			progress = 0;
-		} else {
-			progress++;
+			cachedCatalog = null;
 		}
-		setChanged();
-		return true;
 	}
 
-	private FurnaceState state(List<EssentiaStorageBlockEntity> alembics) {
-		if (input.isEmpty()) {
+	private void distill() {
+		if (burnTicks == 0) {
+			burnCapacity = burnDuration(inventory.getItem(FUEL));
+			burnTicks = burnCapacity;
+			consume(FUEL, FUEL_REMAINDER);
+		}
+		burnTicks--;
+		if (++progress == DURATION) {
+			var profile = currentProfile();
+			profile.forEach((id, amount) -> buffer.merge(id, amount, Integer::sum));
+			buffered += (int) units(profile);
+			consume(INPUT, INPUT_REMAINDER);
+			progress = 0;
+		}
+		setChanged();
+	}
+
+	FurnaceState state() {
+		if (inventory.getItem(INPUT).isEmpty()) {
 			return FurnaceState.IDLE;
 		}
 		var profile = currentProfile();
-		if (profile.isEmpty() || units(profile) > MAX_ALEMBICS * EssentiaStorageBlockEntity.CAPACITY) {
+		long units = units(profile);
+		if (units == 0 || units > CAPACITY) {
 			return FurnaceState.INVALID_INPUT;
 		}
-		if (alembics.isEmpty()) {
-			return FurnaceState.NO_ALEMBIC;
+		if (units > CAPACITY - buffered) {
+			return FurnaceState.BUFFER_FULL;
 		}
-		if (units(profile) > alembics.stream().mapToInt(EssentiaStorageBlockEntity::freeCapacity).sum()) {
-			return FurnaceState.ALEMBIC_FULL;
-		}
-		if (!fits(inputRemainder, remainder(input))) {
+		if (!fits(INPUT, INPUT_REMAINDER)) {
 			return FurnaceState.REMAINDER_FULL;
 		}
 		if (burnTicks == 0) {
-			if (burnDuration(fuel) == 0) {
+			if (burnDuration(inventory.getItem(FUEL)) == 0) {
 				return FurnaceState.NEEDS_FUEL;
 			}
-			if (!fits(fuelRemainder, remainder(fuel))) {
+			if (!fits(FUEL, FUEL_REMAINDER)) {
 				return FurnaceState.REMAINDER_FULL;
 			}
 		}
 		return FurnaceState.DISTILLING;
 	}
 
-	private List<EssentiaStorageBlockEntity> output(ServerLevel server) {
-		if (input.isEmpty()) {
-			return List.of();
+	int progress() {
+		return progress;
+	}
+
+	int burnTicks() {
+		return burnTicks;
+	}
+
+	int burnCapacity() {
+		return burnCapacity;
+	}
+
+	Map<String, Integer> buffer() {
+		return buffer;
+	}
+
+	private void drainIntoAlembics(ServerLevel server) {
+		if (buffer.isEmpty() || server.getGameTime() % 5 != 0) {
+			return;
 		}
-		var result = new ArrayList<EssentiaStorageBlockEntity>(MAX_ALEMBICS);
-		for (int height = 1; height <= MAX_ALEMBICS; height++) {
-			BlockPos above = worldPosition.above(height);
-			if (!server.getBlockState(above).is(EssentiaLogistics.ARCANE_ALEMBIC)
-					|| !(server.getBlockEntity(above) instanceof EssentiaStorageBlockEntity storage) || storage.isRemoved()) {
+		for (int height = 1; height <= MAX_ALEMBICS && !buffer.isEmpty(); height++) {
+			if (!(server.getBlockEntity(worldPosition.above(height)) instanceof EssentiaStorageBlockEntity storage)
+					|| storage.isRemoved() || !storage.getBlockState().is(EssentiaLogistics.ARCANE_ALEMBIC)) {
 				break;
 			}
-			result.add(storage);
-		}
-		return result;
-	}
-
-	private static boolean distribute(List<EssentiaStorageBlockEntity> alembics, Map<String, Integer> profile) {
-		var remaining = new java.util.TreeMap<>(profile);
-		var plan = new LinkedHashMap<EssentiaStorageBlockEntity, Map<String, Integer>>();
-		for (var storage : alembics) {
-			int room = storage.freeCapacity();
-			var share = new LinkedHashMap<String, Integer>();
-			var entries = remaining.entrySet().iterator();
-			while (entries.hasNext() && room > 0) {
+			var entries = buffer.entrySet().iterator();
+			while (entries.hasNext()) {
 				var entry = entries.next();
-				int amount = Math.min(room, entry.getValue());
-				share.put(entry.getKey(), amount);
-				room -= amount;
-				if (amount == entry.getValue()) {
+				int moved = Math.min(storage.freeCapacity(), entry.getValue());
+				if (moved == 0 || !storage.canAccept(Map.of(entry.getKey(), moved))) {
+					continue;
+				}
+				storage.applyBatch(Map.of(entry.getKey(), moved));
+				buffered -= moved;
+				if (moved == entry.getValue()) {
 					entries.remove();
 				} else {
-					entry.setValue(entry.getValue() - amount);
+					entry.setValue(entry.getValue() - moved);
 				}
+				storage.setChanged();
+				setChanged();
+				break;
 			}
-			if (!share.isEmpty()) {
-				plan.put(storage, share);
-			}
 		}
-		if (!remaining.isEmpty() || plan.entrySet().stream().anyMatch(entry -> !entry.getKey().canAccept(entry.getValue()))) {
-			return false;
-		}
-		// Validate the entire allocation before changing any target. Publish dirty flags after writing every ledger.
-		plan.forEach(EssentiaStorageBlockEntity::applyBatch);
-		plan.keySet().forEach(EssentiaStorageBlockEntity::setChanged);
-		return true;
-	}
-
-	boolean interact(ServerPlayer player, InteractionHand hand) {
-		if (!EssentiaLogistics.canInteract(this, player)) {
-			return false;
-		}
-		ItemStack held = player.getItemInHand(hand);
-		if (held.isEmpty()) {
-			if (player.isShiftKeyDown()) {
-				return recover(player, hand);
-			}
-			describe(player);
-			return false;
-		}
-		if (player.isShiftKeyDown()) {
-			if (burnDuration(held) == 0) {
-				return EssentiaLogistics.feedback(player, false, "needs_fuel_item");
-			}
-			if (!fuel.isEmpty()) {
-				return EssentiaLogistics.feedback(player, false, "fuel_occupied");
-			}
-			fuel = takeOne(player, hand, held);
-			setChanged();
-			return EssentiaLogistics.feedback(player, true, "inserted_fuel", fuel.getHoverName());
-		}
-		if (!input.isEmpty()) {
-			return EssentiaLogistics.feedback(player, false, "input_occupied");
-		}
-		var catalog = AspectCatalog.current();
-		var profile = profileFor(catalog, held);
-		if (profile.isEmpty()) {
-			return EssentiaLogistics.feedback(player, false, "needs_profile");
-		}
-		if (units(profile) > MAX_ALEMBICS * EssentiaStorageBlockEntity.CAPACITY) {
-			return EssentiaLogistics.feedback(player, false, "profile_too_large");
-		}
-		input = takeOne(player, hand, held);
-		cachedCatalog = catalog;
-		cachedProfile = profile;
-		progress = 0;
-		setChanged();
-		return EssentiaLogistics.feedback(player, true, "inserted_input", input.getHoverName());
-	}
-
-	private boolean recover(ServerPlayer player, InteractionHand hand) {
-		ItemStack recovered;
-		if (!inputRemainder.isEmpty()) {
-			recovered = inputRemainder;
-			inputRemainder = ItemStack.EMPTY;
-		} else if (!fuelRemainder.isEmpty()) {
-			recovered = fuelRemainder;
-			fuelRemainder = ItemStack.EMPTY;
-		} else if (!input.isEmpty()) {
-			recovered = input;
-			input = ItemStack.EMPTY;
-			cachedCatalog = null;
-			progress = 0;
-		} else if (!fuel.isEmpty()) {
-			recovered = fuel;
-			fuel = ItemStack.EMPTY;
-		} else {
-			return EssentiaLogistics.feedback(player, false, "nothing_to_recover");
-		}
-		player.setItemInHand(hand, recovered);
-		player.getInventory().setChanged();
-		setChanged();
-		return EssentiaLogistics.feedback(player, true, "recovered", recovered.getHoverName());
-	}
-
-	private void describe(ServerPlayer player) {
-		var view = snapshot();
-		player.sendSystemMessage(EssentiaLogistics.text("furnace_status", Component.translatable(view.state().translationKey()),
-				view.progress(), view.duration(), view.burnTicks()));
-		player.sendSystemMessage(EssentiaLogistics.text("furnace_slots", display(input), display(fuel),
-				display(inputRemainder), display(fuelRemainder)));
 	}
 
 	private Map<String, Integer> currentProfile() {
 		var catalog = AspectCatalog.current();
 		if (cachedCatalog != catalog) {
 			cachedCatalog = catalog;
-			cachedProfile = profileFor(catalog, input);
+			cachedProfile = profileFor(catalog, inventory.getItem(INPUT));
 		}
 		return cachedProfile;
+	}
+
+	static boolean acceptsInput(ItemStack stack) {
+		long units = units(profileFor(AspectCatalog.current(), stack));
+		return units > 0 && units <= CAPACITY;
 	}
 
 	private static Map<String, Integer> profileFor(AspectCatalog catalog, ItemStack stack) {
@@ -257,70 +203,74 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 		return profile.values().stream().mapToLong(Integer::longValue).sum();
 	}
 
-	private static ItemStack takeOne(ServerPlayer player, InteractionHand hand, ItemStack held) {
-		ItemStack queued = held.split(1);
-		if (held.isEmpty()) {
-			player.setItemInHand(hand, ItemStack.EMPTY);
-		}
-		player.getInventory().setChanged();
-		return queued;
-	}
-
-	private static Component display(ItemStack stack) {
-		return stack.isEmpty() ? EssentiaLogistics.text("empty_slot") : stack.getHoverName();
-	}
-
-	private static int burnDuration(ItemStack stack) {
-		return stack.isEmpty() ? 0 : Math.max(0, AbstractFurnaceBlockEntity.getFuel().getOrDefault(stack.getItem(), 0));
+	static int burnDuration(ItemStack stack) {
+		return stack.isEmpty() ? 0 : AbstractFurnaceBlockEntity.getFuel().getOrDefault(stack.getItem(), 0);
 	}
 
 	private static ItemStack remainder(ItemStack stack) {
-		var remainder = stack.getItem().getCraftingRemainingItem();
-		return remainder == null ? ItemStack.EMPTY : new ItemStack(remainder);
+		var item = stack.getItem().getCraftingRemainingItem();
+		return item == null ? ItemStack.EMPTY : new ItemStack(item);
 	}
 
-	private static boolean fits(ItemStack stored, ItemStack incoming) {
+	private boolean fits(int source, int byproduct) {
+		var stored = inventory.getItem(byproduct);
+		var incoming = remainder(inventory.getItem(source));
 		return incoming.isEmpty() || stored.isEmpty() || ItemStack.isSameItemSameComponents(stored, incoming)
-				&& stored.getCount() + incoming.getCount() <= stored.getMaxStackSize();
+				&& stored.getCount() < stored.getMaxStackSize();
 	}
 
-	private static ItemStack combine(ItemStack stored, ItemStack incoming) {
-		if (stored.isEmpty()) {
-			return incoming;
+	private void consume(int source, int byproduct) {
+		var incoming = remainder(inventory.getItem(source));
+		inventory.removeItem(source, 1);
+		if (incoming.isEmpty()) {
+			return;
 		}
-		stored.grow(incoming.getCount());
-		return stored;
+		var stored = inventory.getItem(byproduct);
+		inventory.setItem(byproduct, stored.isEmpty() ? incoming : stored.copyWithCount(stored.getCount() + 1));
 	}
 
 	@Override
 	protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 		super.loadAdditional(tag, registries);
-		input = ItemStack.parseOptional(registries, tag.getCompound("input"));
-		fuel = ItemStack.parseOptional(registries, tag.getCompound("fuel"));
-		inputRemainder = ItemStack.parseOptional(registries, tag.getCompound("input_remainder"));
-		fuelRemainder = ItemStack.parseOptional(registries, tag.getCompound("fuel_remainder"));
-		input.limitSize(1);
-		fuel.limitSize(1);
-		progress = input.isEmpty() ? 0 : Mth.clamp(tag.getInt("progress"), 0, DURATION - 1);
-		burnTicks = Math.max(0, tag.getInt("burn_ticks"));
+		for (int slot = 0; slot < ITEM_KEYS.length; slot++) {
+			inventory.setItem(slot, ItemStack.parseOptional(registries, tag.getCompound(ITEM_KEYS[slot])));
+		}
+		progress = inventory.getItem(INPUT).isEmpty() ? 0 : Mth.clamp(tag.getInt("progress"), 0, DURATION - 1);
+		burnTicks = Mth.clamp(tag.getInt("burn_ticks"), 0, 32767);
+		burnCapacity = Mth.clamp(tag.getInt("burn_capacity"), burnTicks, 32767);
+		buffer.clear();
+		buffered = 0;
+		var saved = tag.getCompound("buffer");
+		for (String id : saved.getAllKeys().stream().sorted().toList()) {
+			if (id.equals(AspectCatalog.normalizeId(id)) && saved.contains(id, Tag.TAG_INT)) {
+				int amount = Mth.clamp(saved.getInt(id), 0, CAPACITY - buffered);
+				if (amount > 0) {
+					buffer.put(id, amount);
+					buffered += amount;
+				}
+			}
+		}
 		cachedCatalog = null;
 	}
 
 	@Override
 	protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
 		super.saveAdditional(tag, registries);
-		tag.putInt("version", 1);
-		tag.put("input", input.saveOptional(registries));
-		tag.put("fuel", fuel.saveOptional(registries));
-		tag.put("input_remainder", inputRemainder.saveOptional(registries));
-		tag.put("fuel_remainder", fuelRemainder.saveOptional(registries));
+		tag.putInt("version", 2);
+		for (int slot = 0; slot < ITEM_KEYS.length; slot++) {
+			tag.put(ITEM_KEYS[slot], inventory.getItem(slot).saveOptional(registries));
+		}
 		tag.putInt("progress", progress);
 		tag.putInt("burn_ticks", burnTicks);
+		tag.putInt("burn_capacity", burnCapacity);
+		var saved = new CompoundTag();
+		buffer.forEach(saved::putInt);
+		tag.put("buffer", saved);
 	}
 
 	public enum FurnaceState {
-		IDLE("idle"), INVALID_INPUT("invalid_input"), NEEDS_FUEL("needs_fuel"), NO_ALEMBIC("no_alembic"),
-		ALEMBIC_FULL("alembic_full"), REMAINDER_FULL("remainder_full"), DISTILLING("distilling");
+		IDLE("idle"), INVALID_INPUT("invalid_input"), NEEDS_FUEL("needs_fuel"), BUFFER_FULL("buffer_full"),
+		REMAINDER_FULL("remainder_full"), DISTILLING("distilling");
 
 		private final String key;
 
@@ -334,5 +284,6 @@ public final class EssentiaFurnaceBlockEntity extends BlockEntity {
 	}
 
 	public record FurnaceView(ItemStack input, ItemStack fuel, ItemStack inputRemainder, ItemStack fuelRemainder,
-							int progress, int duration, int burnTicks, FurnaceState state) { }
+							int progress, int duration, int burnTicks, FurnaceState state, int burnCapacity,
+							Map<String, Integer> buffer, int buffered) { }
 }

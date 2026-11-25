@@ -6,6 +6,7 @@ import dev.thaumiclegacy.revealing.RevealingSight;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ChunkPos;
 
@@ -28,11 +29,19 @@ public final class ThaumometerItem extends FieldLensItem {
 	public static void registerLegacyExchange(Item thaumometer, Item... legacy) {
 		Set<Item> oldItems = Set.of(legacy);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
-			if (server.getTickCount() % 20 != 0) {
+			if (server.getTickCount() % 5 != 0) {
 				return;
 			}
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				exchangeLegacy(player.getInventory(), thaumometer, oldItems);
+				if (server.getTickCount() % 20 == 0) {
+					exchangeLegacy(player.getInventory(), thaumometer, oldItems);
+				}
+				for (InteractionHand hand : InteractionHand.values()) {
+					if (player.getItemInHand(hand).getItem() instanceof ThaumometerItem lens) {
+						lens.preview(player, hand);
+						break;
+					}
+				}
 			}
 		});
 	}

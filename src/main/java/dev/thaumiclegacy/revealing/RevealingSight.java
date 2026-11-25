@@ -126,7 +126,7 @@ public final class RevealingSight {
 		} else if (entity instanceof EssentiaFurnaceBlockEntity furnace) {
 			var view = furnace.snapshot();
 			reading = new LogisticsReadoutPayload(pos, worn, view.state().name().toLowerCase(Locale.ROOT),
-					0, 0, List.of(), view.progress(), view.duration(), view.burnTicks());
+					view.buffered(), EssentiaFurnaceBlockEntity.CAPACITY, aspectAmounts(player, view.buffer()), view.progress(), view.duration(), view.burnTicks());
 		} else if (entity instanceof AlchemicalCentrifugeBlockEntity centrifuge) {
 			var view = centrifuge.snapshot();
 			reading = machineReading(player, pos, worn, view.status().name(), view.output(), view.outputCapacity(), view.progress(), view.duration());

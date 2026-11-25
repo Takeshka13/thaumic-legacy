@@ -18,6 +18,7 @@ import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.ResearchJournalItem;
 import dev.thaumiclegacy.research.ResearchProgress;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
+import dev.thaumiclegacy.research.LensFocusPayload;
 import dev.thaumiclegacy.transport.EssentiaTransport;
 import dev.thaumiclegacy.wand.WandItem;
 import dev.thaumiclegacy.workbench.ArcaneWorkbench;
@@ -115,6 +116,7 @@ public class ThaumicLegacy implements ModInitializer {
 					entries.accept(lumenGlassItem);
 				}).build());
 		PayloadTypeRegistry.playS2C().register(JournalSnapshotPayload.TYPE, JournalSnapshotPayload.STREAM_CODEC);
+		PayloadTypeRegistry.playS2C().register(LensFocusPayload.TYPE, LensFocusPayload.CODEC);
 		PayloadTypeRegistry.playS2C().register(ScanFeedbackPayload.TYPE, ScanFeedbackPayload.STREAM_CODEC);
 		PayloadTypeRegistry.playS2C().register(AuraReadingPayload.TYPE, AuraReadingPayload.STREAM_CODEC);
 		FieldLensItem.registerEntityInteraction();

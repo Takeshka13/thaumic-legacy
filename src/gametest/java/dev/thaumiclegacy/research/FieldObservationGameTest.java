@@ -283,6 +283,46 @@ public class FieldObservationGameTest implements FabricGameTest {
         });
     }
 
+    @GameTest(template = EMPTY_STRUCTURE)
+    public void scansFluidSourcesAndFlowAsPersonalObservations(GameTestHelper test) {
+        var level = test.getLevel();
+        var water = test.absolutePos(new BlockPos(0, 1, 0));
+        var flow = water.east(2);
+        var lava = water.east(4);
+        level.setBlockAndUpdate(water, Blocks.WATER.defaultBlockState());
+        level.setBlockAndUpdate(flow, Blocks.WATER.defaultBlockState().setValue(net.minecraft.world.level.block.LiquidBlock.LEVEL, 3));
+        level.setBlockAndUpdate(lava, Blocks.LAVA.defaultBlockState());
+        var scanner = BuiltInRegistries.ITEM.get(ThaumicLegacy.id("thaumometer"));
+        var first = test.makeMockServerPlayerInLevel();
+        var second = test.makeMockServerPlayerInLevel();
+        first.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(scanner));
+        second.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(scanner));
+
+        pointAt(first, flow, 0.5);
+        useLensInAir(first);
+        test.assertValueEqual(discovered(ResearchJournalItem.snapshot(first)), List.of(id("aqua")), "Flowing water reveals Aqua");
+        elapseMockCooldown(first);
+        pointAt(first, water, 0.5);
+        useLensInAir(first);
+        test.assertValueEqual(ResearchJournalItem.snapshot(first).specimens().size(), 1, "Sources and flow share one observation");
+        elapseMockCooldown(first);
+        pointAt(first, lava, 0.5);
+        useLensInAir(first);
+        var journal = ResearchJournalItem.snapshot(first);
+        test.assertValueEqual(discovered(journal), List.of(id("aqua"), id("ignis")), "Lava reveals Ignis");
+        test.assertValueEqual(journal.specimens().stream().map(entry -> entry.kind() + ":" + entry.id()).toList(),
+            List.of("fluid:minecraft:water", "fluid:minecraft:lava"), "Liquid sources are recorded by canonical ID");
+        test.assertTrue(ResearchJournalItem.snapshot(second).specimens().isEmpty(), "The other player receives no source entries");
+        var waterlogged = water.east(6);
+        level.setBlockAndUpdate(waterlogged, Blocks.OAK_SLAB.defaultBlockState()
+            .setValue(net.minecraft.world.level.block.SlabBlock.WATERLOGGED, true));
+        pointAt(second, waterlogged, 0.5);
+        useLensInAir(second);
+        test.assertValueEqual(ResearchJournalItem.snapshot(second).specimens().stream().map(entry -> entry.kind() + ":" + entry.id()).toList(),
+            List.of("fluid:minecraft:water"), "An exposed waterlogged surface reveals water");
+        test.succeed();
+    }
+
     private static void elapseMockCooldown(ServerPlayer player) {
         // The embedded GameTest player does not drive its inventory cooldown clock.
         for (int tick = 0; tick < 9; tick++) {

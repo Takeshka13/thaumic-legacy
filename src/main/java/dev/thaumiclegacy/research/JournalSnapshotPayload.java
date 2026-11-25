@@ -94,7 +94,7 @@ public record JournalSnapshotPayload(List<ResourceLocation> observations, boolea
 	}
 
 	public record AspectView(String id, int amount, int color, int glyph, List<String> parents) {
-		private static final StreamCodec<RegistryFriendlyByteBuf, AspectView> STREAM_CODEC = StreamCodec.composite(
+		static final StreamCodec<RegistryFriendlyByteBuf, AspectView> STREAM_CODEC = StreamCodec.composite(
 				ByteBufCodecs.stringUtf8(AspectCatalog.MAX_ID_LENGTH), AspectView::id,
 				ByteBufCodecs.VAR_INT, AspectView::amount,
 				ByteBufCodecs.INT, AspectView::color,

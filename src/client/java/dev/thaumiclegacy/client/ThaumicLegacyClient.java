@@ -1,8 +1,13 @@
 package dev.thaumiclegacy.client;
 
+import dev.thaumiclegacy.logistics.EssentiaLogistics;
+import dev.thaumiclegacy.logistics.EssentiaFurnaceMenu;
+import dev.thaumiclegacy.logistics.FurnaceBufferPayload;
+
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.aura.AuraReadingPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
+import dev.thaumiclegacy.research.LensFocusPayload;
 import dev.thaumiclegacy.research.ScanFeedbackPayload;
 import dev.thaumiclegacy.revealing.LogisticsReadoutPayload;
 import dev.thaumiclegacy.revealing.NodeSightPayload;
@@ -30,6 +35,13 @@ public class ThaumicLegacyClient implements ClientModInitializer {
 		BlockEntityRenderers.register(Infusion.PEDESTAL_ENTITY, context -> new PedestalRenderer(context.getItemRenderer()));
 		AspectTooltips.register();
 		MenuScreens.register(ArcaneWorkbench.MENU, ArcaneWorkbenchScreen::new);
+		MenuScreens.register(EssentiaLogistics.FURNACE_MENU, EssentiaFurnaceScreen::new);
+		ClientPlayNetworking.registerGlobalReceiver(FurnaceBufferPayload.TYPE, (payload, context) -> {
+			var player = context.player();
+			if (player.containerMenu instanceof EssentiaFurnaceMenu menu && menu.containerId == payload.menuId()) {
+				menu.updateBuffer(payload.aspects());
+			}
+		});
 		ClientPlayNetworking.registerGlobalReceiver(JournalSnapshotPayload.TYPE, (payload, context) ->
 			context.client().setScreen(new ResearchJournalScreen(payload)));
 
@@ -58,8 +70,12 @@ public class ThaumicLegacyClient implements ClientModInitializer {
 			logistics.clear();
 			transport.clear();
 		});
+		ThaumometerLens lens = new ThaumometerLens();
+		ClientPlayNetworking.registerGlobalReceiver(LensFocusPayload.TYPE,
+			(payload, context) -> lens.show(payload));
+		net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> lens.clear());
 		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> {
-			ThaumometerLens.render(graphics);
+			lens.render(graphics);
 			scanFeedback.render(graphics);
 			auraReading.render(graphics);
 			revealing.render(graphics);

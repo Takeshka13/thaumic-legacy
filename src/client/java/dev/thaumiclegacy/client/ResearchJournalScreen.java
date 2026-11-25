@@ -1,18 +1,16 @@
 package dev.thaumiclegacy.client;
 
 import dev.thaumiclegacy.ThaumicLegacy;
+import dev.thaumiclegacy.research.FieldLensItem;
 import dev.thaumiclegacy.research.JournalSnapshotPayload;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.AspectView;
 import dev.thaumiclegacy.research.JournalSnapshotPayload.CategoryView;
-import dev.thaumiclegacy.research.JournalSnapshotPayload.SpecimenView;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractScrollWidget;
@@ -21,13 +19,10 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.world.item.Item;
 
 final class ResearchJournalScreen extends Screen {
 	private static final int COVER = 0xFF462E28;
@@ -47,6 +42,7 @@ final class ResearchJournalScreen extends Screen {
 	private int panelHeight;
 	private Tab tab = Tab.RESEARCH;
 	private int categoryIndex;
+	private AspectView selectedAspect;
 	private final Map<Tab, Button> tabs = new EnumMap<>(Tab.class);
 	private final List<Button> categoryButtons = new ArrayList<>();
 	private Button previousCategories;
@@ -74,7 +70,7 @@ final class ResearchJournalScreen extends Screen {
 		for (Tab choice : Tab.values()) {
 			Component label = Component.translatable(KEY + "tab." + choice.name().toLowerCase(Locale.ROOT));
 			int tabX = left + 8 + choice.ordinal() * (tabWidth + 4);
-			tabs.put(choice, addRenderableWidget(Button.builder(label, button -> selectTab(choice))
+			tabs.put(choice, addRenderableWidget(Button.builder(label, button -> { selectedAspect = null; selectTab(choice); })
 				.bounds(tabX, top + 8, tabWidth, 20).build()));
 		}
 		var categories = journal.research().categories();
@@ -118,6 +114,18 @@ final class ResearchJournalScreen extends Screen {
 		graphics.fill(left, top, left + panelWidth, top + panelHeight, COVER);
 		graphics.renderOutline(left, top, panelWidth, panelHeight, COVER_EDGE);
 		super.render(graphics, mouseX, mouseY, partialTick);
+		if (tab == Tab.ASPECTS && selectedAspect == null && page != null) {
+			var aspect = page.aspectAt(mouseX, mouseY);
+			if (aspect != null) {
+				var sources = sourceParagraphs(aspect);
+				List<Component> tooltip = new ArrayList<>();
+				sources.stream().limit(5).map(Paragraph::text).forEach(tooltip::add);
+				if (sources.size() > 5) {
+					tooltip.add(Component.translatable(KEY + "sources.more"));
+				}
+				graphics.renderComponentTooltip(font, tooltip, mouseX, mouseY);
+			}
+		}
 	}
 
 	@Override
@@ -127,7 +135,7 @@ final class ResearchJournalScreen extends Screen {
 
 	private void selectTab(Tab choice) {
 		tab = choice;
-		tabs.forEach((section, button) -> button.active = section != choice);
+		tabs.forEach((section, button) -> button.active = section != choice || selectedAspect != null);
 		int categoryPage = categoryIndex / CATEGORIES_PER_PAGE;
 		for (int index = 0; index < categoryButtons.size(); index++) {
 			var button = categoryButtons.get(index);
@@ -146,11 +154,45 @@ final class ResearchJournalScreen extends Screen {
 		int offset = choice == Tab.RESEARCH ? researchTop : 34;
 		var paragraphs = switch (choice) {
 			case RESEARCH -> researchParagraphs();
-			case OBSERVATIONS -> observationParagraphs();
-			case ASPECTS -> aspectParagraphs();
+
+			case ASPECTS -> selectedAspect == null ? aspectParagraphs() : sourceParagraphs(selectedAspect);
 		};
 		page = addRenderableWidget(new JournalPage(left + 8, top + offset, panelWidth - 24,
 			Math.max(36, panelHeight - offset - 36), font, paragraphs));
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (button == 0 && tab == Tab.ASPECTS && selectedAspect == null && page != null) {
+			var aspect = page.aspectAt(mouseX, mouseY);
+			if (aspect != null) {
+				selectedAspect = aspect;
+				selectTab(Tab.ASPECTS);
+				return true;
+			}
+		}
+		return super.mouseClicked(mouseX, mouseY, button);
+	}
+
+	private List<Paragraph> sourceParagraphs(AspectView aspect) {
+		List<Paragraph> paragraphs = new ArrayList<>();
+		paragraphs.add(aspectParagraph(aspect, false));
+		paragraphs.add(new Paragraph(Component.translatable(KEY + "sources.title"), ACCENT, 4));
+		for (var source : journal.specimens()) {
+			if (!List.of("block", "item", "fluid").contains(source.kind())) {
+				continue;
+			}
+			for (var amount : source.aspects()) {
+				if (aspect.id().equals(amount.id())) {
+					var name = FieldLensItem.specimenName(source.kind(), source.id());
+					paragraphs.add(new Paragraph(Component.translatable(KEY + "sources.entry", name, amount.amount()), INK, 2));
+				}
+			}
+		}
+		if (paragraphs.size() == 2) {
+			paragraphs.add(new Paragraph(Component.translatable(KEY + "sources.empty"), INK, 2));
+		}
+		return paragraphs;
 	}
 
 	private void changeCategoryPage(int direction) {
@@ -206,34 +248,6 @@ final class ResearchJournalScreen extends Screen {
 		return Component.translatableWithFallback(category.title(), category.id().getPath());
 	}
 
-	private List<Paragraph> observationParagraphs() {
-		List<Paragraph> paragraphs = new ArrayList<>();
-		paragraphs.add(new Paragraph(getTitle(), ACCENT, 8));
-
-		Set<ResourceLocation> detailedBlocks = new HashSet<>();
-		for (SpecimenView specimen : journal.specimens()) {
-			if (specimen.kind().equalsIgnoreCase("block")) {
-				detailedBlocks.add(specimen.id());
-			}
-		}
-		List<ResourceLocation> legacy = journal.observations().stream()
-			.filter(observation -> !detailedBlocks.contains(observation))
-			.toList();
-		int specimenCount = journal.specimens().size() + legacy.size();
-		paragraphs.add(new Paragraph(Component.translatable(KEY + "specimens", specimenCount), INK, 4));
-		if (specimenCount == 0) {
-			paragraphs.add(new Paragraph(Component.translatable(KEY + "empty"), INK, 6));
-		}
-		for (SpecimenView specimen : journal.specimens()) {
-			addSpecimen(paragraphs, specimen.id(), specimen.kind(), specimen.aspects());
-		}
-		for (ResourceLocation observation : legacy) {
-			addSpecimen(paragraphs, observation, "block", List.of());
-		}
-
-		return paragraphs;
-	}
-
 	private List<Paragraph> aspectParagraphs() {
 		List<Paragraph> paragraphs = new ArrayList<>();
 		paragraphs.add(new Paragraph(Component.translatable(KEY + "discovered", journal.discovered().size()), ACCENT, 4));
@@ -251,27 +265,6 @@ final class ResearchJournalScreen extends Screen {
 			}
 		}
 		return paragraphs;
-	}
-
-	private static void addSpecimen(List<Paragraph> paragraphs, ResourceLocation id, String kind, List<AspectView> aspects) {
-		String prefix = kind.toLowerCase(Locale.ROOT);
-		String nameKey = id.toLanguageKey(prefix);
-		if (prefix.equals("item")) {
-			nameKey = BuiltInRegistries.ITEM.getOptional(id).map(Item::getDescriptionId).orElse(nameKey);
-		}
-		Component name = Component.translatableWithFallback(nameKey, id.toString());
-		if (I18n.exists(KEY + "kind." + prefix)) {
-			name = Component.translatable(KEY + "specimen", name, Component.translatable(KEY + "kind." + prefix));
-		}
-		paragraphs.add(new Paragraph(name, ACCENT, 3));
-		String noteKey = id.toLanguageKey("observation");
-		if (prefix.equals("block") && I18n.exists(noteKey)) {
-			paragraphs.add(new Paragraph(Component.translatable(noteKey), INK, 4));
-		}
-		for (AspectView aspect : aspects) {
-			paragraphs.add(aspectParagraph(aspect, true));
-		}
-		paragraphs.add(new Paragraph(Component.empty(), INK, 3));
 	}
 
 	private static Paragraph aspectParagraph(AspectView aspect, boolean showAmount) {
@@ -304,7 +297,7 @@ final class ResearchJournalScreen extends Screen {
 	}
 
 	private enum Tab {
-		RESEARCH, OBSERVATIONS, ASPECTS
+		RESEARCH, ASPECTS
 	}
 
 	private static final class JournalPage extends AbstractScrollWidget {
@@ -374,6 +367,19 @@ final class ResearchJournalScreen extends Screen {
 		protected void updateWidgetNarration(NarrationElementOutput output) {
 			output.add(NarratedElementType.TITLE, getMessage());
 			output.add(NarratedElementType.USAGE, narration);
+		}
+
+		AspectView aspectAt(double mouseX, double mouseY) {
+			if (!isMouseOver(mouseX, mouseY)) {
+				return null;
+			}
+			double position = mouseY - getY() - innerPadding() + scrollAmount();
+			for (Line line : lines) {
+				if (position >= line.offset() && position < line.offset() + LINE_HEIGHT) {
+					return line.aspect();
+				}
+			}
+			return null;
 		}
 
 		private record Line(FormattedCharSequence text, int color, int offset, int indent, AspectView aspect) {}
