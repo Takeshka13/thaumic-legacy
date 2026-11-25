@@ -1,0 +1,24 @@
+{
+  "type": "thaumiclegacy:infusion",
+  "central": {
+    "item": "minecraft:chiseled_stone_bricks"
+  },
+  "components": [
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "thaumiclegacy:resonant_copper"
+    }
+  ],
+  "aspects": {
+    "thaumiclegacy:terra": 2,
+    "thaumiclegacy:ordo": 2
+  },
+  "research": "thaumiclegacy:infusion_foundations",
+  "instability": 1,
+  "result": {
+    "id": "minecraft:lodestone",
+    "count": 1
+  }
+}

@@ -29,7 +29,7 @@ Public API compatibility remains an architectural option. A public API release, 
 ## Planned multiblock structures
 
 - [**Infernal Furnace**](INFERNAL_FURNACE.md) forms a transformed shell with wand activation, fuel-free smelting, bellows, optional Ignis transport, and recoverable teardown. Automation and balance remain future work.
-- **Infusion Altar** centers on a **Runic Matrix** above an **Arcane Pedestal**, with surrounding **Arcane Pedestals** for ingredients. It depends on reliable stored essentia. Its design needs typed essentia consumption during a ritual, visible stability and instability, and recoverable failure consequences such as displaced ingredients or local Flux.
+- **Infusion Altar** has an implemented foundation with wand formation, item display on pedestals, two data-driven rituals, typed essentia from jars or transport, and bounded instability. See [Infusion Altar](INFUSION_ALTAR.md). Broader recipe progression and ritual effects remain future work.
 - **Golem Press** follows infusion and component crafting. Assembly consumes its inputs once, with a clear recovery path if the structure or power supply is interrupted.
 
 ## Planned ancient sites and encounters

@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.gui.screens.MenuScreens;
+import dev.thaumiclegacy.infusion.Infusion;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import dev.thaumiclegacy.node.AuraNodes;
 import net.minecraft.client.renderer.RenderType;
@@ -26,6 +27,7 @@ public class ThaumicLegacyClient implements ClientModInitializer {
 		BlockRenderLayerMap.INSTANCE.putBlock(BuiltInRegistries.BLOCK.get(ThaumicLegacy.id("lumen_glass")),
 			RenderType.translucent());
 		BlockEntityRenderers.register(AuraNodes.BLOCK_ENTITY_TYPE, context -> new AuraNodeRenderer());
+		BlockEntityRenderers.register(Infusion.PEDESTAL_ENTITY, context -> new PedestalRenderer(context.getItemRenderer()));
 		AspectTooltips.register();
 		MenuScreens.register(ArcaneWorkbench.MENU, ArcaneWorkbenchScreen::new);
 		ClientPlayNetworking.registerGlobalReceiver(JournalSnapshotPayload.TYPE, (payload, context) ->

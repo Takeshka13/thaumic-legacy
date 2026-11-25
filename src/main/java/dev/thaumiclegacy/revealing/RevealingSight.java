@@ -130,6 +130,9 @@ public final class RevealingSight {
 		} else if (entity instanceof AlchemicalCentrifugeBlockEntity centrifuge) {
 			var view = centrifuge.snapshot();
 			reading = machineReading(player, pos, worn, view.status().name(), view.output(), view.outputCapacity(), view.progress(), view.duration());
+		} else if (entity instanceof dev.thaumiclegacy.infusion.RunicMatrixEntity matrix) {
+			var view = matrix.reading();
+			reading = machineReading(player, pos, worn, view.status(), view.remaining(), view.total(), view.absorbed(), view.total());
 		} else if (entity instanceof ThaumatoriumBlockEntity thaumatorium) {
 			var view = thaumatorium.snapshot();
 			reading = machineReading(player, pos, worn, view.status().name(), view.essentia(), view.capacity(), view.progress(), view.duration());

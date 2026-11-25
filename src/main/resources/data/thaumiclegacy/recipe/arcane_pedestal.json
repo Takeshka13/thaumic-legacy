@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SSS",
+    " B ",
+    "BBB"
+  ],
+  "key": {
+    "S": {
+      "item": "thaumiclegacy:arcane_stone"
+    },
+    "B": {
+      "item": "thaumiclegacy:arcane_stone_bricks"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:arcane_pedestal",
+    "count": 1
+  }
+}

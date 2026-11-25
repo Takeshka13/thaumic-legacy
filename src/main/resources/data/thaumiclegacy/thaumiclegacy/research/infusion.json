@@ -1,0 +1,14 @@
+{
+  "entries": [
+    {
+      "id": "thaumiclegacy:infusion_foundations",
+      "category": "thaumiclegacy:infusion",
+      "translation": "screen.thaumiclegacy.journal.infusion_foundations",
+      "gate": "always",
+      "parents": [
+        "thaumiclegacy:warded_jars",
+        "thaumiclegacy:wand_charging"
+      ]
+    }
+  ]
+}

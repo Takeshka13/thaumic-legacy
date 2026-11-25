@@ -1,0 +1,36 @@
+{
+  "type": "thaumiclegacy:infusion",
+  "central": {
+    "item": "minecraft:obsidian"
+  },
+  "components": [
+    {
+      "item": "minecraft:obsidian"
+    },
+    {
+      "item": "minecraft:obsidian"
+    },
+    {
+      "item": "minecraft:obsidian"
+    },
+    {
+      "item": "minecraft:obsidian"
+    },
+    {
+      "item": "minecraft:ender_pearl"
+    },
+    {
+      "item": "thaumiclegacy:lumen_glass"
+    }
+  ],
+  "aspects": {
+    "thaumiclegacy:vacuos": 2,
+    "thaumiclegacy:alienis": 2
+  },
+  "research": "thaumiclegacy:infusion_foundations",
+  "instability": 3,
+  "result": {
+    "id": "minecraft:ender_chest",
+    "count": 1
+  }
+}

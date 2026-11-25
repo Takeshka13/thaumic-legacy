@@ -2,6 +2,7 @@ package dev.thaumiclegacy;
 
 import dev.thaumiclegacy.advanced.AdvancedAlchemy;
 import dev.thaumiclegacy.furnace.InfernalFurnace;
+import dev.thaumiclegacy.infusion.Infusion;
 import dev.thaumiclegacy.alchemy.Alchemy;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.aura.AuraCommands;
@@ -75,6 +76,7 @@ public class ThaumicLegacy implements ModInitializer {
 		EssentiaTransport.register();
 		AdvancedAlchemy.register();
 		InfernalFurnace.register();
+		Infusion.register();
 		ResearchProgress.register();
 		AuraNodes.register();
 		RevealingSight.register(goggles);
@@ -105,6 +107,10 @@ public class ThaumicLegacy implements ModInitializer {
 					entries.accept(AdvancedAlchemy.THAUMATORIUM);
 
 					entries.accept(InfernalFurnace.BELLOWS_ITEM);
+					entries.accept(Infusion.STONE);
+					entries.accept(Infusion.BRICKS);
+					entries.accept(Infusion.PEDESTAL);
+					entries.accept(Infusion.MATRIX);
 					entries.accept(ArcaneWorkbench.ITEM);
 					entries.accept(lumenGlassItem);
 				}).build());

@@ -3,6 +3,7 @@ package dev.thaumiclegacy.transport;
 import dev.thaumiclegacy.ThaumicLegacy;
 import dev.thaumiclegacy.advanced.AdvancedAlchemy;
 import dev.thaumiclegacy.furnace.InfernalFurnace;
+import dev.thaumiclegacy.infusion.Infusion;
 import dev.thaumiclegacy.advanced.AdvancedEssentiaPort;
 import dev.thaumiclegacy.aspect.AspectCatalog;
 import dev.thaumiclegacy.logistics.EssentiaLogistics;
@@ -34,6 +35,7 @@ import net.minecraft.world.level.material.PushReaction;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 
 public final class EssentiaTransport {
 	public static final int INTERVAL = 10;
@@ -201,7 +203,7 @@ public final class EssentiaTransport {
 			return face == Direction.UP;
 		}
 		return TransportBlock.hasPort(state, face) || AdvancedAlchemy.inputPort(state, face) || AdvancedAlchemy.outputPort(state, face)
-				|| InfernalFurnace.inputPort(state, face);
+				|| InfernalFurnace.inputPort(state, face) || Infusion.inputPort(state, face);
 	}
 
 	static Status localStatus(BlockState state, TransportBlockEntity transport) {
@@ -214,13 +216,18 @@ public final class EssentiaTransport {
 		return null;
 	}
 
-	static BlockState loadedState(ServerLevel level, BlockPos pos) {
+	public static BlockState loadedState(ServerLevel level, BlockPos pos) {
 		if (level.isOutsideBuildHeight(pos)) {
 			return null;
 		}
 		var chunk = level.getChunkSource().getChunkNow(
 				SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
 		return chunk == null ? null : chunk.getBlockState(pos);
+	}
+
+	/** Loaded jar endpoints reachable through open, matching transport parts. */
+	public static Set<EssentiaStorageBlockEntity> reachableJars(ServerLevel level, BlockPos target, String aspect) {
+		return TransportSearch.reachableJars(level, target, aspect);
 	}
 
 	private static void message(ServerPlayer player, String key, Object... args) {

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "GLG",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "thaumiclegacy:resonant_copper"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "L": {
+      "item": "thaumiclegacy:lumen_glass"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:runic_matrix",
+    "count": 1
+  }
+}

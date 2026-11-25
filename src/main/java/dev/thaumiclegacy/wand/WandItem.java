@@ -1,6 +1,7 @@
 package dev.thaumiclegacy.wand;
 
 import dev.thaumiclegacy.furnace.InfernalFurnace;
+import dev.thaumiclegacy.infusion.Infusion;
 import dev.thaumiclegacy.node.AuraNodeBlockEntity;
 import dev.thaumiclegacy.node.AuraNodes;
 import dev.thaumiclegacy.research.NodeResearch;
@@ -34,6 +35,9 @@ public final class WandItem extends Item {
 	public InteractionResult useOn(UseOnContext context) {
 		Player player = context.getPlayer();
 		var state = context.getLevel().getBlockState(context.getClickedPos());
+		if (player != null && state.is(Infusion.MATRIX)) {
+			return player instanceof ServerPlayer server ? Infusion.useWand(server, context.getItemInHand(), context.getClickedPos()) : InteractionResult.SUCCESS;
+		}
 		if (player instanceof ServerPlayer server && state.is(Blocks.IRON_BARS)) {
 			return InfernalFurnace.activate(server, context.getItemInHand(), context.getClickedPos(), context.getClickedFace());
 		}

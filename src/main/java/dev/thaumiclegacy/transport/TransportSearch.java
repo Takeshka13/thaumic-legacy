@@ -67,6 +67,46 @@ final class TransportSearch {
 		return false;
 	}
 
+	static Set<EssentiaStorageBlockEntity> reachableJars(ServerLevel level, BlockPos target, String aspect) {
+		var jars = new LinkedHashSet<EssentiaStorageBlockEntity>();
+		var queue = new ArrayDeque<PullStep>();
+		var visited = new HashSet<BlockPos>();
+		queue.addLast(new PullStep(target, 0));
+		visited.add(target);
+		while (!queue.isEmpty()) {
+			var step = queue.removeFirst();
+			var state = EssentiaTransport.loadedState(level, step.pos);
+			if (state == null) {
+				continue;
+			}
+			for (var face : EssentiaTransport.DIRECTIONS) {
+				if (step.hops == 0 ? !face.getAxis().isHorizontal() : !EssentiaTransport.hasPort(state, face)) {
+					continue;
+				}
+				var next = step.pos.relative(face);
+				var adjacent = EssentiaTransport.loadedState(level, next);
+				if (adjacent == null || !EssentiaTransport.hasPort(adjacent, face.getOpposite())
+						|| visited.contains(next) || visited.size() >= EssentiaTransport.MAX_VISITED) {
+					continue;
+				}
+				if (adjacent.is(EssentiaLogistics.WARDED_JAR) && step.hops > 0
+						&& level.getBlockEntity(next) instanceof EssentiaStorageBlockEntity jar && !jar.isRemoved()) {
+					jars.add(jar);
+					visited.add(next);
+				} else if (adjacent.getBlock() instanceof TransportBlock && step.hops < EssentiaTransport.MAX_HOPS
+						&& level.getBlockEntity(next) instanceof TransportBlockEntity pipe && !pipe.isRemoved()
+						&& EssentiaTransport.localStatus(adjacent, pipe) == null
+						&& (pipe.filter().isEmpty() || pipe.filter().equals(aspect))) {
+					visited.add(next);
+					queue.addLast(new PullStep(next, step.hops + 1));
+				}
+			}
+		}
+		return jars;
+	}
+
+	private record PullStep(BlockPos pos, int hops) {}
+
 	private static void note(AdvancedEssentiaPort port, Activity activity) {
 		if (port instanceof EssentiaStorageBlockEntity storage) {
 			storage.noteTransport(activity);

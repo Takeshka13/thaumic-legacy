@@ -1,4 +1,10 @@
 {
   "replace": false,
-  "values": ["thaumiclegacy:infernal_furnace"]
+  "values": [
+    "thaumiclegacy:infernal_furnace",
+    "thaumiclegacy:arcane_stone",
+    "thaumiclegacy:arcane_stone_bricks",
+    "thaumiclegacy:arcane_pedestal",
+    "thaumiclegacy:runic_matrix"
+  ]
 }

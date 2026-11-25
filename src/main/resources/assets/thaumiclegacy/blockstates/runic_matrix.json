@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "formed=false": {
+      "model": "thaumiclegacy:block/runic_matrix"
+    },
+    "formed=true": {
+      "model": "thaumiclegacy:block/runic_matrix_active"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DSD",
+    "SCS",
+    "DSD"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:polished_deepslate"
+    },
+    "S": {
+      "item": "minecraft:stone"
+    },
+    "C": {
+      "item": "thaumiclegacy:resonant_copper"
+    }
+  },
+  "result": {
+    "id": "thaumiclegacy:arcane_stone",
+    "count": 8
+  }
+}
